@@ -57,55 +57,47 @@
 
   // -----------------------------------------------
   // Layer 1: Beyond20 custom event dispatch
-  // Beyond20's content script listens for the
-  // "beyond20-roll" CustomEvent on the document.
+  // Beyond20 listens on the document for a
+  // "Beyond20_SendMessage" CustomEvent whose detail
+  // is a one-element array containing a request
+  // object. See: https://beyond20.here-for-more.info/api
   // -----------------------------------------------
   function _sendViaBeyond20(rollData) {
-    // Build a Beyond20-compatible roll object
-    const beyond20Payload = {
-      action:    'roll',
-      character: rollData.characterName || 'Unknown',
-      request: {
-        roll:    rollData.formula,
-        name:    rollData.label,
-        type:    _mapRollType(rollData.type),
-        damages: rollData.damageType ? [rollData.damageType] : []
-      },
-      result: {
-        total:      rollData.total,
-        parts:      rollData.rolls,
-        breakdown:  rollData.breakdown,
-        is_critical: rollData.critStatus === 'crit_hit',
-        is_fumble:   rollData.critStatus === 'crit_fail'
-      }
-    };
-
-    document.dispatchEvent(new CustomEvent('beyond20-roll', {
+    document.dispatchEvent(new CustomEvent('Beyond20_SendMessage', {
       bubbles: true,
-      detail:  beyond20Payload
-    }));
-
-    // Also dispatch the older event name for compatibility
-    document.dispatchEvent(new CustomEvent('Beyond20_Roll', {
-      bubbles: true,
-      detail:  beyond20Payload
+      detail: [_buildBeyond20Request(rollData)]
     }));
   }
 
   /**
-   * Map our internal roll type to a Beyond20 roll type string.
+   * Build a Beyond20 "custom" roll request.
+   * We use type "custom" for every roll category (attack,
+   * damage, skill, save, initiative, hit dice) instead of
+   * Beyond20's structured per-category types, because those
+   * require many D&D-Beyond-specific fields this sheet doesn't
+   * track. "custom" just needs a formula + label, and Roll20
+   * rolls the formula itself — it does not echo back the
+   * number our own roll modal already displayed.
    */
-  function _mapRollType(type) {
-    const map = {
-      attack:     'to-hit',
-      damage:     'damage',
-      skill:      'skill-check',
-      save:       'saving-throw',
-      initiative: 'initiative',
-      ability:    'ability-check',
-      hitdie:     'hit-dice'
+  function _buildBeyond20Request(rollData) {
+    const request = {
+      action:    'roll',
+      type:      'custom',
+      character: {
+        name:   rollData.characterName || 'Unknown',
+        source: 'Character Vault',
+        type:   'Custom',
+        url:    location.href
+      },
+      roll: rollData.formula,
+      name: rollData.label || 'Roll'
     };
-    return map[type] || 'roll';
+
+    if (rollData.damageType) {
+      request.description = `Damage type: ${rollData.damageType}`;
+    }
+
+    return request;
   }
 
   // -----------------------------------------------
