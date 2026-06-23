@@ -237,50 +237,46 @@ function renderTabInfo(char) {
     <div class="section-header">Identity</div>
     <div class="char-info-grid">
       ${infoField('Character Name', 'name', char.name)}
-      ${infoField('Player Name',    'player_name', char.player_name)}
-      ${infoSelect('Race', 'race', char.race, CONFIG.races)}
-      ${infoSelect('Class', 'class', char.class, CONFIG.classes.map(c => c.label))}
-      ${infoField('Subclass / Archetype', 'subclass', char.subclass)}
-      ${infoNumberField('Level', 'level', char.level, 1, 20)}
-      ${infoSelect('Alignment', 'alignment', char.alignment, CONFIG.alignments)}
-      ${infoField('Background', 'background', char.background)}
-      ${infoNumberField('Experience Points', 'experience', char.experience, 0)}
+      ${infoField('Origin', 'origin', char.origin)}
+      ${infoNumberField('Level', 'level', char.level, 1, 99)}
     </div>
 
-    <div class="section-header mt-lg">Appearance</div>
+    <div class="section-header mt-lg">Origin Perk</div>
     <div class="char-info-grid">
-      ${infoField('Age',    'age',    char.age)}
-      ${infoField('Height', 'height', char.height)}
-      ${infoField('Weight', 'weight', char.weight)}
-      ${infoField('Eyes',   'eyes',   char.eyes)}
-      ${infoField('Skin',   'skin',   char.skin)}
-      ${infoField('Hair',   'hair',   char.hair)}
+      ${infoField('Perk Name', 'origin_perk_name', char.origin_perk?.name)}
+      ${infoTextarea('Perk Description', 'origin_perk_desc', char.origin_perk?.description)}
     </div>
 
-    <div class="section-header mt-lg">Personality</div>
-    <div class="char-info-grid">
-      ${infoTextarea('Personality Traits', 'traits',     char.traits)}
-      ${infoTextarea('Ideals',             'ideals',     char.ideals)}
-      ${infoTextarea('Bonds',              'bonds',      char.bonds)}
-      ${infoTextarea('Flaws',              'flaws',      char.flaws)}
-    </div>
-    ${infoTextarea('Physical Appearance / Backstory', 'appearance', char.appearance, true)}
-    ${infoTextarea('Features & Traits', 'features', char.features, true)}
+    <div class="section-header mt-lg">Perks <span style="color:var(--text-muted);font-size:0.8rem">(${(char.perks || []).length}/10)</span></div>
+    <div id="perks-list"></div>
   `;
 
-  // Wire up change listeners
   panel.querySelectorAll('[data-field]').forEach(el => {
     el.addEventListener('change', (e) => {
       const key = e.target.dataset.field;
-      let val = e.target.type === 'number' ? (parseInt(e.target.value) || 0) : e.target.value;
-      getChar()[key] = val;
-      if (key === 'name') {
-        document.getElementById('top-bar-title').textContent = val || 'Unnamed';
-        renderRoster(); // Keep roster in sync
+      const val = e.target.type === 'number' ? (parseInt(e.target.value) || 0) : e.target.value;
+      if (key === 'origin_perk_name') {
+        getChar().origin_perk.name = val;
+      } else if (key === 'origin_perk_desc') {
+        getChar().origin_perk.description = val;
+      } else {
+        getChar()[key] = val;
+        if (key === 'name') {
+          document.getElementById('top-bar-title').textContent = val || 'Unnamed';
+          renderRoster();
+        }
+        if (key === 'level') recalcDerivedStats();
       }
-      if (key === 'level') recalcDerivedStats();
       scheduleSave();
     });
+  });
+
+  buildTextEntryList(document.getElementById('perks-list'), char.perks, {
+    maxCount: 10,
+    secondFieldLabel: 'Description',
+    secondFieldType: 'text',
+    addButtonLabel: '+ Add Perk',
+    onChange: () => renderTabInfo(getChar())
   });
 }
 
@@ -295,17 +291,6 @@ function infoNumberField(label, field, value, min = 0, max = '') {
   return `<div class="field-group">
     <label class="field-label">${label}</label>
     <input class="field-input" type="number" data-field="${field}" value="${value || 0}" min="${min}" ${max ? `max="${max}"` : ''}>
-  </div>`;
-}
-
-function infoSelect(label, field, value, options) {
-  const opts = options.map(o => `<option value="${escHtml(o)}" ${o === value ? 'selected' : ''}>${escHtml(o)}</option>`).join('');
-  return `<div class="field-group">
-    <label class="field-label">${label}</label>
-    <select class="field-input" data-field="${field}">
-      <option value="">— Select —</option>
-      ${opts}
-    </select>
   </div>`;
 }
 
@@ -1167,6 +1152,58 @@ function importCharacter() {
     openCharacter(char.id);
   });
   input.click();
+}
+
+// -----------------------------------------------
+// SHARED: simple name(+second field) entry list
+// Used by Perks, Psycasts, Injuries, Critical Injuries.
+// -----------------------------------------------
+function buildTextEntryList(container, items, opts) {
+  const { maxCount, secondFieldLabel, secondFieldType, addButtonLabel, onChange } = opts;
+  container.innerHTML = '';
+
+  const list = document.createElement('div');
+  list.className = 'equipment-list';
+  (items || []).forEach((entry, i) => {
+    const row = document.createElement('div');
+    row.className = 'equipment-item';
+    row.innerHTML = `
+      <span class="equipment-name">${escHtml(entry.name)}</span>
+      <span style="flex:1;font-size:0.75rem;color:var(--text-muted)">${escHtml(String(entry[secondFieldType === 'number' ? 'weight' : 'description'] ?? ''))}</span>
+      <button class="delete-item-btn" title="Remove">✕</button>
+    `;
+    row.addEventListener('mouseenter', () => row.querySelector('.delete-item-btn').style.opacity = '1');
+    row.addEventListener('mouseleave', () => row.querySelector('.delete-item-btn').style.opacity = '0');
+    row.querySelector('.delete-item-btn').addEventListener('click', () => {
+      items.splice(i, 1);
+      scheduleSave();
+      onChange();
+    });
+    list.appendChild(row);
+  });
+  container.appendChild(list);
+
+  if ((items || []).length >= maxCount) return; // at cap, no add form
+
+  const form = document.createElement('div');
+  form.className = 'flex gap-sm mt-md flex-wrap';
+  form.innerHTML = `
+    <input class="field-input" placeholder="Name" id="entry-name-tmp" style="flex:2">
+    <input class="field-input" placeholder="${secondFieldLabel}" id="entry-second-tmp" type="${secondFieldType === 'number' ? 'number' : 'text'}" style="flex:2">
+    <button class="btn btn-secondary" id="entry-add-tmp">${addButtonLabel}</button>
+  `;
+  container.appendChild(form);
+
+  form.querySelector('#entry-add-tmp').addEventListener('click', () => {
+    const name = form.querySelector('#entry-name-tmp').value.trim();
+    if (!name) return;
+    const secondVal = form.querySelector('#entry-second-tmp').value;
+    const entry = { name };
+    entry[secondFieldType === 'number' ? 'weight' : 'description'] = secondFieldType === 'number' ? (parseFloat(secondVal) || 0) : secondVal.trim();
+    items.push(entry);
+    scheduleSave();
+    onChange();
+  });
 }
 
 // -----------------------------------------------
