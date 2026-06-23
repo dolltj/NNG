@@ -94,69 +94,36 @@ function evaluateDiceExpression(expr, vars = {}) {
 }
 
 /**
- * Build the full attack roll formula string from config and character data.
- * Returns something like "1d20 + 5 + 3" (attack roll + stat mod + proficiency)
+ * NNG derived stats — pure formulas off core_stats + level.
  */
-function buildAttackFormula(attack, character, config) {
-  const statId = attack.attack_stat || 'strength';
-  const stat = character.core_stats?.[statId] ?? 10;
-  const mod = Math.floor((stat - 10) / 2);
-  const profBonus = getProficiencyBonus(character.level || 1, config);
-  const profAdd = attack.proficient ? profBonus : 0;
+function deriveMaxHP(character) {
+  const str  = character.core_stats?.strength  ?? 0;
+  const fort = character.core_stats?.fortitude ?? 0;
+  const level = character.level || 1;
+  return 50 + (str + fort) * level;
+}
 
-  const parts = [attack.attack_roll || '1d20'];
-  if (mod !== 0) parts.push(mod >= 0 ? `+ ${mod}` : `- ${Math.abs(mod)}`);
-  if (profAdd !== 0) parts.push(`+ ${profAdd}`);
-  return parts.join(' ');
+function deriveInjuryThreshold(character) {
+  return 10 + (character.core_stats?.fortitude ?? 0);
+}
+
+function deriveRecoveryRate(character) {
+  const fort = character.core_stats?.fortitude ?? 0;
+  const wil  = character.core_stats?.willpower ?? 0;
+  return 10 + (fort + wil);
+}
+
+function deriveCarryingCapacity(character) {
+  return 10 + (character.core_stats?.strength ?? 0);
 }
 
 /**
- * Build the damage formula string for an attack.
+ * Build a "2d10 + modifier" test formula string.
  */
-function buildDamageFormula(attack, character, config) {
-  const statId = attack.attack_stat || 'strength';
-  const stat = character.core_stats?.[statId] ?? 10;
-  let mod = Math.floor((stat - 10) / 2);
-
-  // Finesse: use higher of STR/DEX
-  if (attack.finesse) {
-    const dexMod = Math.floor(((character.core_stats?.dexterity ?? 10) - 10) / 2);
-    mod = Math.max(mod, dexMod);
-  }
-
-  const base = attack.damage || '1d4';
-  if (mod === 0) return base;
-  return mod > 0 ? `${base} + ${mod}` : `${base} - ${Math.abs(mod)}`;
-}
-
-/**
- * Check if a d20 roll contains a natural 20 or natural 1
- */
-function checkCrit(rolls) {
-  for (const r of rolls) {
-    if (r.faces === 20) {
-      if (r.results.includes(20)) return 'crit_hit';
-      if (r.results.includes(1))  return 'crit_fail';
-    }
-  }
-  return null;
-}
-
-/**
- * Get proficiency bonus from config for a given level.
- */
-function getProficiencyBonus(level, config) {
-  const table = config?.proficiency_bonus_by_level;
-  if (!table) return 2;
-  const idx = Math.max(0, Math.min(level - 1, table.length - 1));
-  return table[idx];
-}
-
-/**
- * Compute ability modifier from raw stat value.
- */
-function computeModifier(statValue) {
-  return Math.floor((statValue - 10) / 2);
+function buildTestFormula(modifier) {
+  if (modifier > 0) return `2d10 + ${modifier}`;
+  if (modifier < 0) return `2d10 - ${Math.abs(modifier)}`;
+  return '2d10';
 }
 
 /**
@@ -165,4 +132,13 @@ function computeModifier(statValue) {
 function formatMod(mod) {
   if (mod >= 0) return `+${mod}`;
   return `−${Math.abs(mod)}`;
+}
+
+// Node export for unit testing; no-op in the browser (no `module` global there).
+if (typeof module !== 'undefined') {
+  module.exports = {
+    rollDie, parseDiceToken, evaluateDiceExpression,
+    deriveMaxHP, deriveInjuryThreshold, deriveRecoveryRate,
+    deriveCarryingCapacity, buildTestFormula, formatMod
+  };
 }
