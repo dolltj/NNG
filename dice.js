@@ -96,6 +96,8 @@ function evaluateDiceExpression(expr, vars = {}) {
 /**
  * NNG derived stats — pure formulas off core_stats + level.
  */
+
+/** Max HP = 50 + (STR + FOR) * level */
 function deriveMaxHP(character) {
   const str  = character.core_stats?.strength  ?? 0;
   const fort = character.core_stats?.fortitude ?? 0;
@@ -103,16 +105,19 @@ function deriveMaxHP(character) {
   return 50 + (str + fort) * level;
 }
 
+/** Injury Threshold = 10 + FOR */
 function deriveInjuryThreshold(character) {
   return 10 + (character.core_stats?.fortitude ?? 0);
 }
 
+/** Recovery Rate = 10 + (FOR + WIL) */
 function deriveRecoveryRate(character) {
   const fort = character.core_stats?.fortitude ?? 0;
   const wil  = character.core_stats?.willpower ?? 0;
   return 10 + (fort + wil);
 }
 
+/** Carrying Capacity = 10 + STR */
 function deriveCarryingCapacity(character) {
   return 10 + (character.core_stats?.strength ?? 0);
 }
@@ -121,6 +126,7 @@ function deriveCarryingCapacity(character) {
  * Build a "2d10 + modifier" test formula string.
  */
 function buildTestFormula(modifier) {
+  if (!Number.isFinite(modifier)) throw new TypeError(`buildTestFormula: expected a finite number, got ${modifier}`);
   if (modifier > 0) return `2d10 + ${modifier}`;
   if (modifier < 0) return `2d10 - ${Math.abs(modifier)}`;
   return '2d10';
