@@ -1,0 +1,47 @@
+{
+  "system": "NNG",
+  "version": "1.0.0",
+  "dice": { "test": "2d10" },
+  "core_stats": [
+    { "id": "strength",  "label": "Strength",  "abbr": "STR", "default": 5 },
+    { "id": "agility",   "label": "Agility",   "abbr": "AGI", "default": 5 },
+    { "id": "fortitude", "label": "Fortitude", "abbr": "FOR", "default": 5 },
+    { "id": "willpower", "label": "Willpower", "abbr": "WIL", "default": 5 }
+  ],
+  "tracked_resources": [
+    { "id": "hp",      "label": "Hit Points", "has_max": true, "derived_max": true,  "default_current": 50, "color": "#e74c3c", "show_bar": true },
+    { "id": "fatigue", "label": "Fatigue",    "has_max": true, "derived_max": false, "default_current": 0,  "default_max": 100, "color": "#9b59b6", "show_bar": true }
+  ],
+  "skills": [
+    { "id": "acrobatics",        "label": "Acrobatics" },
+    { "id": "animal_handling",   "label": "Animal Handling" },
+    { "id": "athletics",         "label": "Athletics" },
+    { "id": "bureaucracy",       "label": "Bureaucracy" },
+    { "id": "computers",         "label": "Computers" },
+    { "id": "construction",      "label": "Construction" },
+    { "id": "cooking",           "label": "Cooking" },
+    { "id": "deception",         "label": "Deception" },
+    { "id": "fabrications",      "label": "Fabrications" },
+    { "id": "gather_information","label": "Gather Information" },
+    { "id": "history",           "label": "History" },
+    { "id": "insight",           "label": "Insight" },
+    { "id": "intimidation",      "label": "Intimidation" },
+    { "id": "investigation",     "label": "Investigation" },
+    { "id": "linguistics",       "label": "Linguistics" },
+    { "id": "mechanics",         "label": "Mechanics" },
+    { "id": "medicine",          "label": "Medicine" },
+    { "id": "nature",            "label": "Nature" },
+    { "id": "navigation",        "label": "Navigation" },
+    { "id": "occult",            "label": "Occult" },
+    { "id": "perception",        "label": "Perception" },
+    { "id": "performance",       "label": "Performance" },
+    { "id": "persuasion",        "label": "Persuasion" },
+    { "id": "piloting",          "label": "Piloting" },
+    { "id": "riding",            "label": "Riding" },
+    { "id": "science",           "label": "Science" },
+    { "id": "sleight_of_hand",   "label": "Sleight of Hand" },
+    { "id": "stealth",           "label": "Stealth" },
+    { "id": "streetwise",        "label": "Streetwise" },
+    { "id": "survival",          "label": "Survival" }
+  ]
+}

@@ -7,7 +7,7 @@
 // -----------------------------------------------
 // STATE
 // -----------------------------------------------
-let CONFIG       = null;   // loaded from dnd5e.json
+let CONFIG       = null;   // loaded from nng.json
 let CHARACTERS   = {};     // { [id]: characterObject }
 let ACTIVE_ID    = null;   // currently open character id
 let SAVE_TIMER   = null;   // debounce handle for autosave
@@ -15,7 +15,7 @@ let ACTIVE_ROLL  = null;   // current roll result for the overlay
 
 const STORAGE_CHARS_KEY  = 'ttrpg_characters';
 const STORAGE_ACTIVE_KEY = 'ttrpg_active_id';
-const CONFIG_URL         = 'config/dnd5e.json';
+const CONFIG_URL         = 'config/nng.json';
 
 // -----------------------------------------------
 // BOOTSTRAP
