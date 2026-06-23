@@ -1,0 +1,199 @@
+{
+  "system": "D&D 5th Edition",
+  "version": "1.0.0",
+  "dice": {
+    "ability_check": "d20",
+    "saving_throw": "d20",
+    "attack_roll": "d20",
+    "default_hit_die": "d10"
+  },
+  "core_stats": [
+    { "id": "strength",     "label": "Strength",     "abbr": "STR", "default": 10 },
+    { "id": "dexterity",    "label": "Dexterity",    "abbr": "DEX", "default": 10 },
+    { "id": "constitution", "label": "Constitution", "abbr": "CON", "default": 10 },
+    { "id": "intelligence", "label": "Intelligence", "abbr": "INT", "default": 10 },
+    { "id": "wisdom",       "label": "Wisdom",       "abbr": "WIS", "default": 10 },
+    { "id": "charisma",     "label": "Charisma",     "abbr": "CHA", "default": 10 }
+  ],
+  "modifier_formula": "floor((stat - 10) / 2)",
+  "proficiency_bonus_by_level": [2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6],
+  "tracked_resources": [
+    {
+      "id": "hp",
+      "label": "Hit Points",
+      "has_max": true,
+      "default_current": 10,
+      "default_max": 10,
+      "color": "#e74c3c",
+      "show_bar": true
+    },
+    {
+      "id": "temp_hp",
+      "label": "Temp HP",
+      "has_max": false,
+      "default_current": 0,
+      "color": "#3498db",
+      "show_bar": false
+    },
+    {
+      "id": "hit_dice",
+      "label": "Hit Dice",
+      "has_max": true,
+      "default_current": 1,
+      "default_max": 1,
+      "die": "d10",
+      "color": "#e67e22",
+      "show_bar": false
+    },
+    {
+      "id": "spell_slots",
+      "label": "Spell Slots",
+      "has_max": true,
+      "default_current": 0,
+      "default_max": 0,
+      "color": "#9b59b6",
+      "show_bar": true
+    },
+    {
+      "id": "inspiration",
+      "label": "Inspiration",
+      "has_max": false,
+      "default_current": 0,
+      "is_toggle": true,
+      "color": "#f1c40f",
+      "show_bar": false
+    }
+  ],
+  "skills": [
+    { "id": "acrobatics",      "label": "Acrobatics",      "stat": "dexterity" },
+    { "id": "animal_handling", "label": "Animal Handling",  "stat": "wisdom" },
+    { "id": "arcana",          "label": "Arcana",           "stat": "intelligence" },
+    { "id": "athletics",       "label": "Athletics",        "stat": "strength" },
+    { "id": "deception",       "label": "Deception",        "stat": "charisma" },
+    { "id": "history",         "label": "History",          "stat": "intelligence" },
+    { "id": "insight",         "label": "Insight",          "stat": "wisdom" },
+    { "id": "intimidation",    "label": "Intimidation",     "stat": "charisma" },
+    { "id": "investigation",   "label": "Investigation",    "stat": "intelligence" },
+    { "id": "medicine",        "label": "Medicine",         "stat": "wisdom" },
+    { "id": "nature",          "label": "Nature",           "stat": "intelligence" },
+    { "id": "perception",      "label": "Perception",       "stat": "wisdom" },
+    { "id": "performance",     "label": "Performance",      "stat": "charisma" },
+    { "id": "persuasion",      "label": "Persuasion",       "stat": "charisma" },
+    { "id": "religion",        "label": "Religion",         "stat": "intelligence" },
+    { "id": "sleight_of_hand", "label": "Sleight of Hand",  "stat": "dexterity" },
+    { "id": "stealth",         "label": "Stealth",          "stat": "dexterity" },
+    { "id": "survival",        "label": "Survival",         "stat": "wisdom" }
+  ],
+  "saving_throws": [
+    { "id": "str_save", "label": "Strength",     "stat": "strength" },
+    { "id": "dex_save", "label": "Dexterity",    "stat": "dexterity" },
+    { "id": "con_save", "label": "Constitution", "stat": "constitution" },
+    { "id": "int_save", "label": "Intelligence", "stat": "intelligence" },
+    { "id": "wis_save", "label": "Wisdom",       "stat": "wisdom" },
+    { "id": "cha_save", "label": "Charisma",     "stat": "charisma" }
+  ],
+  "combat_stats": [
+    { "id": "armor_class",   "label": "Armor Class",   "abbr": "AC",  "default": 10 },
+    { "id": "initiative",    "label": "Initiative",    "abbr": "INIT","default": 0, "derived_from": "dexterity_mod" },
+    { "id": "speed",         "label": "Speed",         "abbr": "SPD", "default": 30, "unit": "ft" },
+    { "id": "passive_perception", "label": "Passive Perception", "abbr": "PP", "default": 10, "derived": "10 + perception_bonus" }
+  ],
+  "default_attacks": [
+    {
+      "id": "unarmed",
+      "label": "Unarmed Strike",
+      "attack_stat": "strength",
+      "attack_roll": "1d20",
+      "damage": "1",
+      "damage_type": "bludgeoning",
+      "proficient": true,
+      "range": "5 ft",
+      "notes": ""
+    },
+    {
+      "id": "longsword",
+      "label": "Longsword",
+      "attack_stat": "strength",
+      "attack_roll": "1d20",
+      "damage": "1d8",
+      "damage_type": "slashing",
+      "versatile_damage": "1d10",
+      "proficient": true,
+      "range": "5 ft",
+      "notes": "Versatile (1d10)"
+    },
+    {
+      "id": "shortbow",
+      "label": "Shortbow",
+      "attack_stat": "dexterity",
+      "attack_roll": "1d20",
+      "damage": "1d6",
+      "damage_type": "piercing",
+      "proficient": true,
+      "range": "80/320 ft",
+      "notes": "Ammunition, Two-Handed"
+    },
+    {
+      "id": "dagger",
+      "label": "Dagger",
+      "attack_stat": "strength",
+      "attack_roll": "1d20",
+      "damage": "1d4",
+      "damage_type": "piercing",
+      "proficient": true,
+      "finesse": true,
+      "range": "20/60 ft",
+      "notes": "Finesse, Light, Thrown"
+    },
+    {
+      "id": "handaxe",
+      "label": "Handaxe",
+      "attack_stat": "strength",
+      "attack_roll": "1d20",
+      "damage": "1d6",
+      "damage_type": "slashing",
+      "proficient": true,
+      "range": "20/60 ft",
+      "notes": "Light, Thrown"
+    }
+  ],
+  "damage_types": [
+    "bludgeoning","piercing","slashing",
+    "fire","cold","lightning","thunder",
+    "acid","poison","necrotic","radiant",
+    "psychic","force"
+  ],
+  "conditions": [
+    "Blinded","Charmed","Deafened","Exhaustion",
+    "Frightened","Grappled","Incapacitated",
+    "Invisible","Paralyzed","Petrified","Poisoned",
+    "Prone","Restrained","Stunned","Unconscious"
+  ],
+  "classes": [
+    { "id": "barbarian",  "label": "Barbarian",  "hit_die": "d12" },
+    { "id": "bard",       "label": "Bard",       "hit_die": "d8"  },
+    { "id": "cleric",     "label": "Cleric",     "hit_die": "d8"  },
+    { "id": "druid",      "label": "Druid",      "hit_die": "d8"  },
+    { "id": "fighter",    "label": "Fighter",    "hit_die": "d10" },
+    { "id": "monk",       "label": "Monk",       "hit_die": "d8"  },
+    { "id": "paladin",    "label": "Paladin",    "hit_die": "d10" },
+    { "id": "ranger",     "label": "Ranger",     "hit_die": "d10" },
+    { "id": "rogue",      "label": "Rogue",      "hit_die": "d8"  },
+    { "id": "sorcerer",   "label": "Sorcerer",   "hit_die": "d6"  },
+    { "id": "warlock",    "label": "Warlock",    "hit_die": "d8"  },
+    { "id": "wizard",     "label": "Wizard",     "hit_die": "d6"  },
+    { "id": "artificer",  "label": "Artificer",  "hit_die": "d8"  }
+  ],
+  "races": [
+    "Human","Elf","Dwarf","Halfling","Gnome",
+    "Half-Elf","Half-Orc","Tiefling","Dragonborn","Aasimar",
+    "Tabaxi","Kenku","Lizardfolk","Tortle","Genasi",
+    "Goliath","Firbolg","Triton","Yuan-Ti","Custom"
+  ],
+  "alignments": [
+    "Lawful Good","Neutral Good","Chaotic Good",
+    "Lawful Neutral","True Neutral","Chaotic Neutral",
+    "Lawful Evil","Neutral Evil","Chaotic Evil",
+    "Unaligned"
+  ]
+}
