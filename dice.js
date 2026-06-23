@@ -36,7 +36,8 @@ function parseDiceToken(token) {
  */
 function evaluateDiceExpression(expr, vars = {}) {
   // Substitute named variables
-  let substituted = expr.toLowerCase().replace(/[a-z_]+/g, (match) => {
+  let substituted = expr.toLowerCase().replace(/\d*d\d+|[a-z_]+/g, (match) => {
+    if (/^\d*d\d+$/.test(match)) return match; // dice notation (e.g. "2d10", "d20") — leave untouched
     if (match in vars) {
       const v = parseInt(vars[match]);
       return isNaN(v) ? '0' : String(v);
