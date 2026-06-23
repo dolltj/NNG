@@ -1157,9 +1157,18 @@ function importCharacter() {
 // -----------------------------------------------
 // SHARED: simple name(+second field) entry list
 // Used by Perks, Psycasts, Injuries, Critical Injuries.
+// secondFieldType determines the stored property name: 'number' -> weight,
+// anything else -> description. This is a closed-world assumption matching
+// the 4 known call sites (Perks/Injuries/Critical Injuries/Psycasts use
+// text+description, Equipment uses number+weight), not a free-form type hint.
+// secondFieldLabel/addButtonLabel must be static developer-supplied strings,
+// not character/user data, since they're interpolated into innerHTML unescaped.
 // -----------------------------------------------
+let _entryListCounter = 0;
+
 function buildTextEntryList(container, items, opts) {
   const { maxCount, secondFieldLabel, secondFieldType, addButtonLabel, onChange } = opts;
+  const uid = `entry-${_entryListCounter++}`;
   container.innerHTML = '';
 
   const list = document.createElement('div');
@@ -1188,16 +1197,16 @@ function buildTextEntryList(container, items, opts) {
   const form = document.createElement('div');
   form.className = 'flex gap-sm mt-md flex-wrap';
   form.innerHTML = `
-    <input class="field-input" placeholder="Name" id="entry-name-tmp" style="flex:2">
-    <input class="field-input" placeholder="${secondFieldLabel}" id="entry-second-tmp" type="${secondFieldType === 'number' ? 'number' : 'text'}" style="flex:2">
-    <button class="btn btn-secondary" id="entry-add-tmp">${addButtonLabel}</button>
+    <input class="field-input" placeholder="Name" id="${uid}-name" style="flex:2">
+    <input class="field-input" placeholder="${secondFieldLabel}" id="${uid}-second" type="${secondFieldType === 'number' ? 'number' : 'text'}" style="flex:2">
+    <button class="btn btn-secondary" id="${uid}-add">${addButtonLabel}</button>
   `;
   container.appendChild(form);
 
-  form.querySelector('#entry-add-tmp').addEventListener('click', () => {
-    const name = form.querySelector('#entry-name-tmp').value.trim();
+  form.querySelector(`#${uid}-add`).addEventListener('click', () => {
+    const name = form.querySelector(`#${uid}-name`).value.trim();
     if (!name) return;
-    const secondVal = form.querySelector('#entry-second-tmp').value;
+    const secondVal = form.querySelector(`#${uid}-second`).value;
     const entry = { name };
     entry[secondFieldType === 'number' ? 'weight' : 'description'] = secondFieldType === 'number' ? (parseFloat(secondVal) || 0) : secondVal.trim();
     items.push(entry);
