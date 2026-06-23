@@ -36,7 +36,7 @@ function parseDiceToken(token) {
  */
 function evaluateDiceExpression(expr, vars = {}) {
   // Substitute named variables
-  let substituted = expr.toLowerCase().replace(/\d*d\d+|[a-z_]+/g, (match) => {
+  let substituted = expr.toLowerCase().replace(/[a-z_][a-z_0-9]*|\d+d\d+|\bd\d+\b/g, (match) => {
     if (/^\d*d\d+$/.test(match)) return match; // dice notation (e.g. "2d10", "d20") — leave untouched
     if (match in vars) {
       const v = parseInt(vars[match]);
