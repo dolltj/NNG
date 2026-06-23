@@ -96,51 +96,26 @@ function buildDefaultCharacter(id) {
   });
 
   const skills = {};
-  CONFIG.skills.forEach(s => { skills[s.id] = { proficient: false, expertise: false }; });
-
-  const saves = {};
-  CONFIG.saving_throws.forEach(s => { saves[s.id] = { proficient: false }; });
-
-  const attacks = CONFIG.default_attacks.map(a => ({ ...a }));
+  CONFIG.skills.forEach(s => { skills[s.id] = { origin: 0, rank: 0 }; });
 
   return {
     id,
     name:        'New Character',
-    race:        '',
-    class:       '',
-    subclass:    '',
+    origin:      '',
     level:       1,
-    background:  '',
-    alignment:   '',
-    experience:  0,
-    player_name: '',
-    age:         '',
-    height:      '',
-    weight:      '',
-    eyes:        '',
-    skin:        '',
-    hair:        '',
     core_stats:  stats,
     resources,
+    armor: { head: 0, body: 0 },
+    speed: 30,
     skills,
-    saving_throws: saves,
-    combat: {
-      armor_class: 10,
-      speed: 30,
-      initiative_bonus: 0
-    },
-    conditions:    [],
-    attacks,
-    spells:        { cantrips: [], level1: [], level2: [], level3: [], level4: [], level5: [], level6: [], level7: [], level8: [], level9: [] },
-    equipment:     [],
-    currency:      { gp: 0, sp: 0, cp: 0, ep: 0, pp: 0 },
-    features:      '',
-    traits:        '',
-    ideals:        '',
-    bonds:         '',
-    flaws:         '',
-    notes:         '',
-    appearance:    ''
+    perks:        [],
+    origin_perk:  { name: '', description: '' },
+    injuries:           [],
+    critical_injuries:  [],
+    weapons:      [],
+    psycasts:     [],
+    equipment:    [],
+    notes:        ''
   };
 }
 
