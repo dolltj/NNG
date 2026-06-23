@@ -308,74 +308,105 @@ function renderTabAbilities(char) {
   const panel = document.getElementById('tab-abilities');
   panel.innerHTML = '';
 
-  // --- Resources ---
-  panel.innerHTML += `<div class="section-header">Resources</div>`;
-  const resGrid = document.createElement('div');
-  resGrid.className = 'resources-grid';
-  CONFIG.tracked_resources.forEach(r => {
-    resGrid.appendChild(buildResourceCard(r, char));
-  });
-  panel.appendChild(resGrid);
-
-  // --- Combat stats row ---
-  panel.innerHTML += `<div class="section-header mt-md">Combat</div>`;
-  panel.appendChild(buildCombatStatsRow(char));
-
   // --- Ability Scores ---
-  panel.innerHTML += `<div class="section-header mt-md">Ability Scores</div>`;
+  panel.innerHTML += `<div class="section-header">Ability Scores</div>`;
   const abGrid = document.createElement('div');
   abGrid.className = 'ability-scores-grid';
   CONFIG.core_stats.forEach(s => abGrid.appendChild(buildAbilityCard(s, char)));
   panel.appendChild(abGrid);
 
-  // --- Saving Throws ---
-  panel.innerHTML += `<div class="section-header mt-md">Saving Throws</div>`;
-  const savesGrid = document.createElement('div');
-  savesGrid.className = 'saves-grid';
-  CONFIG.saving_throws.forEach(s => savesGrid.appendChild(buildSaveRow(s, char)));
-  panel.appendChild(savesGrid);
+  // --- Resources (HP, Fatigue) ---
+  panel.innerHTML += `<div class="section-header mt-md">Resources</div>`;
+  const resGrid = document.createElement('div');
+  resGrid.className = 'resources-grid';
+  CONFIG.tracked_resources.forEach(r => resGrid.appendChild(buildResourceCard(r, char)));
+  panel.appendChild(resGrid);
+
+  // --- Derived stats (read-only) ---
+  panel.innerHTML += `<div class="section-header mt-md">Derived</div>`;
+  const derivedRow = document.createElement('div');
+  derivedRow.className = 'combat-stats-row';
+  derivedRow.innerHTML = `
+    <div class="combat-stat-chip">
+      <span class="combat-stat-chip-label">Injury Threshold</span>
+      <span class="combat-stat-chip-value">${deriveInjuryThreshold(char)}</span>
+    </div>
+    <div class="combat-stat-chip">
+      <span class="combat-stat-chip-label">Recovery Rate</span>
+      <span class="combat-stat-chip-value">${deriveRecoveryRate(char)}</span>
+    </div>
+  `;
+  panel.appendChild(derivedRow);
 
   // --- Skills ---
   panel.innerHTML += `<div class="section-header mt-md">Skills</div>`;
+  const skillsHeader = document.createElement('div');
+  skillsHeader.className = 'skill-row';
+  skillsHeader.style.fontSize = '0.75rem';
+  skillsHeader.style.color = 'var(--text-muted)';
+  skillsHeader.innerHTML = `<span></span><span>Skill</span><span>Origin</span><span>Rank</span><span>Total</span>`;
+  panel.appendChild(skillsHeader);
+
   const skillsWrap = document.createElement('div');
   skillsWrap.className = 'skills-columns';
   CONFIG.skills.forEach(s => skillsWrap.appendChild(buildSkillRow(s, char)));
   panel.appendChild(skillsWrap);
 
-  // --- Conditions ---
-  panel.innerHTML += `<div class="section-header mt-md">Conditions</div>`;
-  const condWrap = document.createElement('div');
-  condWrap.className = 'conditions-grid';
-  CONFIG.conditions.forEach(c => condWrap.appendChild(buildConditionChip(c, char)));
-  panel.appendChild(condWrap);
+  // --- Injuries ---
+  panel.innerHTML += `<div class="section-header mt-md">Injuries</div>`;
+  const injuriesWrap = document.createElement('div');
+  injuriesWrap.id = 'injuries-list';
+  panel.appendChild(injuriesWrap);
+  buildTextEntryList(injuriesWrap, char.injuries, {
+    maxCount: Infinity,
+    secondFieldLabel: 'Description',
+    secondFieldType: 'text',
+    addButtonLabel: '+ Add Injury',
+    onChange: () => renderTabAbilities(getChar())
+  });
+
+  // --- Critical Injuries ---
+  panel.innerHTML += `<div class="section-header mt-md">Critical Injuries</div>`;
+  const critInjuriesWrap = document.createElement('div');
+  critInjuriesWrap.id = 'critical-injuries-list';
+  panel.appendChild(critInjuriesWrap);
+  buildTextEntryList(critInjuriesWrap, char.critical_injuries, {
+    maxCount: Infinity,
+    secondFieldLabel: 'Description',
+    secondFieldType: 'text',
+    addButtonLabel: '+ Add Critical Injury',
+    onChange: () => renderTabAbilities(getChar())
+  });
 }
 
 function buildResourceCard(resDef, char) {
   const res = char.resources[resDef.id] || { current: 0, max: resDef.default_max ?? 0 };
+  const maxVal = resDef.derived_max ? deriveMaxHP(char) : res.max;
   const card = document.createElement('div');
   card.className = 'resource-card';
   card.id = `res-card-${resDef.id}`;
 
-  const hasBoth = resDef.has_max;
-  const barHtml = (resDef.show_bar && hasBoth)
+  const barHtml = resDef.show_bar
     ? `<div class="resource-bar-wrap"><div class="resource-bar-fill" id="res-bar-${resDef.id}"
-         style="background:${resDef.color}; width:${calcBarPct(res.current, res.max)}%"></div></div>`
+         style="background:${resDef.color}; width:${calcBarPct(res.current, maxVal)}%"></div></div>`
     : '';
 
   card.innerHTML = `
-    <div class="resource-label">${resDef.label}${resDef.die ? ` (${resDef.die})` : ''}</div>
+    <div class="resource-label">${resDef.label}</div>
     <div class="resource-controls">
       <button class="resource-btn" data-res="${resDef.id}" data-delta="-1">−</button>
       <span class="resource-value-display" id="res-val-${resDef.id}" title="Click to edit">${res.current}</span>
       <input class="resource-value-input" id="res-input-${resDef.id}" type="number" value="${res.current}">
-      ${hasBoth ? `<span class="resource-max">/ <input class="currency-input" id="res-max-${resDef.id}"
-          style="width:40px" type="number" value="${res.max ?? 0}" title="Max"></span>` : ''}
+      <span class="resource-max">/ ${
+        resDef.derived_max
+          ? maxVal
+          : `<input class="currency-input" id="res-max-${resDef.id}" style="width:40px" type="number" value="${maxVal ?? 0}" title="Max">`
+      }</span>
       <button class="resource-btn" data-res="${resDef.id}" data-delta="+1">＋</button>
     </div>
     ${barHtml}
   `;
 
-  // ±1 buttons
   card.querySelectorAll('.resource-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const delta = parseInt(btn.dataset.delta);
@@ -383,20 +414,16 @@ function buildResourceCard(resDef, char) {
     });
   });
 
-  // Click value to edit inline
   const valDisplay = card.querySelector(`#res-val-${resDef.id}`);
   const valInput   = card.querySelector(`#res-input-${resDef.id}`);
-  if (valDisplay && valInput) {
-    valDisplay.addEventListener('click', () => {
-      valDisplay.style.display = 'none';
-      valInput.style.display   = 'block';
-      valInput.focus(); valInput.select();
-    });
-    valInput.addEventListener('blur', () => commitResourceEdit(resDef.id, valInput, valDisplay));
-    valInput.addEventListener('keydown', e => { if (e.key === 'Enter') valInput.blur(); });
-  }
+  valDisplay.addEventListener('click', () => {
+    valDisplay.style.display = 'none';
+    valInput.style.display   = 'block';
+    valInput.focus(); valInput.select();
+  });
+  valInput.addEventListener('blur', () => commitResourceEdit(resDef.id, valInput, valDisplay));
+  valInput.addEventListener('keydown', e => { if (e.key === 'Enter') valInput.blur(); });
 
-  // Max edit
   const maxInput = card.querySelector(`#res-max-${resDef.id}`);
   if (maxInput) {
     maxInput.addEventListener('change', () => {
@@ -406,7 +433,7 @@ function buildResourceCard(resDef, char) {
     });
   }
 
-  updateResourceCardState(card, resDef, res);
+  updateResourceCardState(card, resDef, res, maxVal);
   return card;
 }
 
@@ -422,9 +449,11 @@ function commitResourceEdit(resId, input, display) {
 }
 
 function adjustResource(resId, delta, resDef) {
-  const res = getChar().resources[resId];
+  const char = getChar();
+  const res = char.resources[resId];
+  const maxVal = resDef.derived_max ? deriveMaxHP(char) : res.max;
   let newVal = (res.current || 0) + delta;
-  if (resDef.has_max && res.max != null) newVal = Math.min(newVal, res.max);
+  if (maxVal != null) newVal = Math.min(newVal, maxVal);
   newVal = Math.max(0, newVal);
   res.current = newVal;
   const display = document.getElementById(`res-val-${resId}`);
@@ -436,20 +465,19 @@ function adjustResource(resId, delta, resDef) {
 function updateResourceDisplay(resId, resDef) {
   const char = getChar();
   const res  = char.resources[resId];
+  const maxVal = resDef.derived_max ? deriveMaxHP(char) : res.max;
   const bar  = document.getElementById(`res-bar-${resId}`);
-  if (bar) bar.style.width = calcBarPct(res.current, res.max) + '%';
+  if (bar) bar.style.width = calcBarPct(res.current, maxVal) + '%';
   const card = document.getElementById(`res-card-${resId}`);
-  if (card) updateResourceCardState(card, resDef, res);
+  if (card) updateResourceCardState(card, resDef, res, maxVal);
 }
 
-function updateResourceCardState(card, resDef, res) {
+function updateResourceCardState(card, resDef, res, maxVal) {
   if (resDef.id === 'hp') {
-    const pct = calcBarPct(res.current, res.max);
-    card.classList.toggle('low-hp', pct <= 25 && res.max > 0);
+    const pct = calcBarPct(res.current, maxVal);
+    card.classList.toggle('low-hp', pct <= 25 && maxVal > 0);
     const bar = card.querySelector(`#res-bar-${resDef.id}`);
-    if (bar) {
-      bar.style.backgroundColor = pct <= 25 ? 'var(--color-hp-low)' : resDef.color;
-    }
+    if (bar) bar.style.backgroundColor = pct <= 25 ? 'var(--color-hp-low)' : resDef.color;
   }
 }
 
@@ -458,262 +486,87 @@ function calcBarPct(current, max) {
   return Math.max(0, Math.min(100, Math.round((current / max) * 100)));
 }
 
-function buildCombatStatsRow(char) {
-  const wrap = document.createElement('div');
-  wrap.className = 'combat-stats-row';
-
-  const profBonus = getProficiencyBonus(char.level || 1, CONFIG);
-  const dexMod    = computeModifier(char.core_stats.dexterity || 10);
-  const initBonus = (char.combat.initiative_bonus || 0) + dexMod;
-  const passPerc  = 10 + getSkillBonus('perception', char);
-
-  const chips = [
-    { label: 'Proficiency', value: `+${profBonus}`, id: 'prof-bonus', editable: false, cls: 'proficiency-chip' },
-    { label: 'Armor Class', value: char.combat.armor_class, id: 'combat-ac', editable: true, field: 'armor_class' },
-    { label: 'Initiative',  value: formatMod(initBonus), id: 'combat-init', editable: false },
-    { label: 'Speed',       value: char.combat.speed, id: 'combat-speed', editable: true, field: 'speed' },
-    { label: 'Passive Perc', value: passPerc, id: 'combat-pp', editable: false }
-  ];
-
-  chips.forEach(chip => {
-    const el = document.createElement('div');
-    el.className = `combat-stat-chip ${chip.cls || ''}`;
-    el.id = chip.id;
-    el.innerHTML = `
-      <span class="combat-stat-chip-label">${chip.label}</span>
-      <span class="combat-stat-chip-value">
-        ${chip.editable
-          ? `<input type="number" value="${chip.value}" data-combat-field="${chip.field}" style="width:48px">`
-          : chip.value}
-      </span>`;
-    if (chip.editable) {
-      el.querySelector('input').addEventListener('change', e => {
-        getChar().combat[chip.field] = parseInt(e.target.value) || 0;
-        scheduleSave();
-        refreshCombatStats();
-      });
-    }
-    wrap.appendChild(el);
-  });
-
-  return wrap;
-}
-
-function refreshCombatStats() {
-  const char = getChar();
-  const prof = getProficiencyBonus(char.level || 1, CONFIG);
-  const dexMod = computeModifier(char.core_stats.dexterity || 10);
-  const init = (char.combat.initiative_bonus || 0) + dexMod;
-  const pp = 10 + getSkillBonus('perception', char);
-
-  const profEl = document.getElementById('prof-bonus');
-  if (profEl) profEl.querySelector('.combat-stat-chip-value').textContent = `+${prof}`;
-  const initEl = document.getElementById('combat-init');
-  if (initEl) initEl.querySelector('.combat-stat-chip-value').textContent = formatMod(init);
-  const ppEl = document.getElementById('combat-pp');
-  if (ppEl) ppEl.querySelector('.combat-stat-chip-value').textContent = pp;
-}
-
 function buildAbilityCard(statDef, char) {
   const card = document.createElement('div');
   card.className = 'ability-card';
   card.dataset.stat = statDef.id;
 
-  const val = char.core_stats[statDef.id] ?? 10;
-  const mod = computeModifier(val);
-  const modStr = formatMod(mod);
-  const modCls = mod > 0 ? 'positive' : mod < 0 ? 'negative' : 'zero';
+  const val = char.core_stats[statDef.id] ?? 0;
 
   card.innerHTML = `
     <span class="ability-abbr">${statDef.abbr}</span>
-    <input class="ability-score-input" type="number" min="1" max="30"
+    <input class="ability-score-input" type="number" min="0" max="20"
            value="${val}" data-stat="${statDef.id}" id="stat-input-${statDef.id}">
-    <span class="ability-modifier ${modCls}" id="stat-mod-${statDef.id}">${modStr}</span>
-    <button class="ability-roll-btn" data-roll-stat="${statDef.id}">🎲 Check</button>
+    <button class="ability-roll-btn" data-roll-stat="${statDef.id}">🎲 Test</button>
   `;
 
-  // Stat change → recompute modifier and dependent skills
   card.querySelector('.ability-score-input').addEventListener('input', e => {
-    const newVal = Math.max(1, Math.min(30, parseInt(e.target.value) || 10));
+    const newVal = Math.max(0, Math.min(20, parseInt(e.target.value) || 0));
     getChar().core_stats[statDef.id] = newVal;
-    updateAbilityModDisplay(statDef.id, newVal);
-    refreshAllSkillsAndSaves();
-    refreshCombatStats();
+    recalcDerivedStats();
     scheduleSave();
   });
 
-  // Roll ability check
   card.querySelector('.ability-roll-btn').addEventListener('click', () => {
-    const curVal = getChar().core_stats[statDef.id] ?? 10;
-    const curMod = computeModifier(curVal);
-    const formula = curMod >= 0 ? `1d20 + ${curMod}` : `1d20 - ${Math.abs(curMod)}`;
+    const curVal = getChar().core_stats[statDef.id] ?? 0;
+    const formula = buildTestFormula(curVal);
     const result  = evaluateDiceExpression(formula);
-    showRollModal({
-      label: `${statDef.label} Check`,
-      type:  'ability',
-      formula,
-      ...result,
-      critStatus: checkCrit(result.rolls)
-    });
+    showRollModal({ label: `${statDef.label} Test`, type: 'ability', formula, ...result });
   });
 
   return card;
 }
 
-function updateAbilityModDisplay(statId, val) {
-  const mod    = computeModifier(val);
-  const modEl  = document.getElementById(`stat-mod-${statId}`);
-  if (!modEl) return;
-  modEl.textContent = formatMod(mod);
-  modEl.className   = `ability-modifier ${mod > 0 ? 'positive' : mod < 0 ? 'negative' : 'zero'}`;
-}
-
-function buildSaveRow(saveDef, char) {
-  const row = document.createElement('div');
-  row.className = 'save-row';
-  const saveData = char.saving_throws[saveDef.id] || { proficient: false };
-  const bonus = getSaveBonus(saveDef.id, char);
-
-  row.innerHTML = `
-    <div class="proficiency-dot ${saveData.proficient ? 'proficient' : ''}"
-         data-save="${saveDef.id}" title="Toggle proficiency"></div>
-    <span class="save-label">${saveDef.label}</span>
-    <span class="save-bonus ${bonus >= 0 ? '' : ''}" id="save-bonus-${saveDef.id}">${formatMod(bonus)}</span>
-    <button class="ability-roll-btn" style="font-size:0.7rem;padding:2px 6px;"
-            data-roll-save="${saveDef.id}">🎲</button>
-  `;
-
-  row.querySelector('.proficiency-dot').addEventListener('click', e => {
-    const sv = getChar().saving_throws[saveDef.id];
-    sv.proficient = !sv.proficient;
-    e.target.classList.toggle('proficient', sv.proficient);
-    refreshSaveBonus(saveDef.id);
-    scheduleSave();
-  });
-
-  row.querySelector('[data-roll-save]').addEventListener('click', () => {
-    const bonus2 = getSaveBonus(saveDef.id, getChar());
-    const formula = bonus2 >= 0 ? `1d20 + ${bonus2}` : `1d20 - ${Math.abs(bonus2)}`;
-    const result  = evaluateDiceExpression(formula);
-    showRollModal({ label: `${saveDef.label} Save`, type: 'save', formula, ...result, critStatus: checkCrit(result.rolls) });
-  });
-
-  return row;
-}
-
-function getSaveBonus(saveId, char) {
-  const saveDef = CONFIG.saving_throws.find(s => s.id === saveId);
-  if (!saveDef) return 0;
-  const statVal = char.core_stats[saveDef.stat] ?? 10;
-  const mod     = computeModifier(statVal);
-  const saveData = char.saving_throws[saveId] || { proficient: false };
-  const prof    = saveData.proficient ? getProficiencyBonus(char.level || 1, CONFIG) : 0;
-  return mod + prof;
-}
-
-function refreshSaveBonus(saveId) {
-  const el = document.getElementById(`save-bonus-${saveId}`);
-  if (el) el.textContent = formatMod(getSaveBonus(saveId, getChar()));
-}
-
 function buildSkillRow(skillDef, char) {
   const row = document.createElement('div');
   row.className = 'skill-row';
-  const skillData = char.skills[skillDef.id] || { proficient: false, expertise: false };
-  const statDef   = CONFIG.core_stats.find(s => s.id === skillDef.stat);
-  const bonus     = getSkillBonus(skillDef.id, char);
-
-  const dotCls = skillData.expertise ? 'expertise' : skillData.proficient ? 'proficient' : '';
+  const skillData = char.skills[skillDef.id] || { origin: 0, rank: 0 };
+  const total = (skillData.origin || 0) + (skillData.rank || 0);
 
   row.innerHTML = `
-    <div class="proficiency-dot ${dotCls}" data-skill="${skillDef.id}" title="Click: proficient | Double-click: expertise"></div>
-    <span class="skill-bonus ${bonus >= 0 ? 'positive' : 'negative'}" id="skill-bonus-${skillDef.id}">${formatMod(bonus)}</span>
-    <span class="skill-name">${skillDef.label}</span>
-    <span class="skill-stat-badge">${statDef?.abbr || '?'}</span>
     <button class="skill-roll-btn" data-roll-skill="${skillDef.id}" title="Roll ${skillDef.label}">🎲</button>
+    <span class="skill-name">${skillDef.label}</span>
+    <input class="currency-input" style="width:40px" type="number" min="0" value="${skillData.origin || 0}" data-skill-origin="${skillDef.id}">
+    <input class="currency-input" style="width:40px" type="number" min="0" max="12" value="${skillData.rank || 0}" data-skill-rank="${skillDef.id}">
+    <span class="skill-bonus" id="skill-total-${skillDef.id}">${total}</span>
   `;
 
-  // Single click = toggle proficiency, double click = expertise
-  const dot = row.querySelector('.proficiency-dot');
-  let clickTimer = null;
-  dot.addEventListener('click', () => {
-    clearTimeout(clickTimer);
-    clickTimer = setTimeout(() => {
-      const s = getChar().skills[skillDef.id];
-      if (!s.proficient && !s.expertise) {
-        s.proficient = true;
-      } else if (s.proficient && !s.expertise) {
-        s.proficient = false;
-      }
-      dot.className = `proficiency-dot ${s.expertise ? 'expertise' : s.proficient ? 'proficient' : ''}`;
-      refreshSkillBonus(skillDef.id);
-      refreshCombatStats();
-      scheduleSave();
-    }, 220);
+  row.querySelector('[data-skill-origin]').addEventListener('change', e => {
+    getChar().skills[skillDef.id].origin = parseInt(e.target.value) || 0;
+    refreshSkillTotal(skillDef.id);
+    scheduleSave();
   });
-  dot.addEventListener('dblclick', () => {
-    clearTimeout(clickTimer);
-    const s = getChar().skills[skillDef.id];
-    s.expertise = !s.expertise;
-    if (s.expertise) s.proficient = true;
-    dot.className = `proficiency-dot ${s.expertise ? 'expertise' : s.proficient ? 'proficient' : ''}`;
-    refreshSkillBonus(skillDef.id);
+  row.querySelector('[data-skill-rank]').addEventListener('change', e => {
+    const v = Math.max(0, Math.min(12, parseInt(e.target.value) || 0));
+    e.target.value = v;
+    getChar().skills[skillDef.id].rank = v;
+    refreshSkillTotal(skillDef.id);
     scheduleSave();
   });
 
   row.querySelector('[data-roll-skill]').addEventListener('click', () => {
-    const b = getSkillBonus(skillDef.id, getChar());
-    const formula = b >= 0 ? `1d20 + ${b}` : `1d20 - ${Math.abs(b)}`;
+    const s = getChar().skills[skillDef.id];
+    const total2 = (s.origin || 0) + (s.rank || 0);
+    const formula = buildTestFormula(total2);
     const result  = evaluateDiceExpression(formula);
-    showRollModal({ label: `${skillDef.label}`, type: 'skill', formula, ...result, critStatus: checkCrit(result.rolls) });
+    showRollModal({ label: skillDef.label, type: 'skill', formula, ...result });
   });
 
   return row;
 }
 
-function getSkillBonus(skillId, char) {
-  const skillDef  = CONFIG.skills.find(s => s.id === skillId);
-  if (!skillDef) return 0;
-  const statVal   = char.core_stats[skillDef.stat] ?? 10;
-  const mod       = computeModifier(statVal);
-  const skillData = char.skills[skillId] || {};
-  const prof      = getProficiencyBonus(char.level || 1, CONFIG);
-  const profAdd   = skillData.expertise ? prof * 2 : skillData.proficient ? prof : 0;
-  return mod + profAdd;
+function getSkillTotal(skillId, char) {
+  const s = char.skills[skillId] || { origin: 0, rank: 0 };
+  return (s.origin || 0) + (s.rank || 0);
 }
 
-function refreshSkillBonus(skillId) {
-  const el = document.getElementById(`skill-bonus-${skillId}`);
-  if (!el) return;
-  const b = getSkillBonus(skillId, getChar());
-  el.textContent = formatMod(b);
-  el.className   = `skill-bonus ${b >= 0 ? 'positive' : 'negative'}`;
-}
-
-function refreshAllSkillsAndSaves() {
-  const char = getChar();
-  CONFIG.skills.forEach(s => refreshSkillBonus(s.id));
-  CONFIG.saving_throws.forEach(s => refreshSaveBonus(s.id));
+function refreshSkillTotal(skillId) {
+  const el = document.getElementById(`skill-total-${skillId}`);
+  if (el) el.textContent = getSkillTotal(skillId, getChar());
 }
 
 function recalcDerivedStats() {
-  refreshAllSkillsAndSaves();
-  refreshCombatStats();
-}
-
-function buildConditionChip(conditionName, char) {
-  const chip = document.createElement('div');
-  chip.className = `condition-chip ${char.conditions.includes(conditionName) ? 'active' : ''}`;
-  chip.textContent = conditionName;
-  chip.addEventListener('click', () => {
-    const c = getChar();
-    const idx = c.conditions.indexOf(conditionName);
-    if (idx === -1) c.conditions.push(conditionName);
-    else c.conditions.splice(idx, 1);
-    chip.classList.toggle('active', c.conditions.includes(conditionName));
-    scheduleSave();
-  });
-  return chip;
+  renderTabAbilities(getChar());
 }
 
 // -----------------------------------------------
