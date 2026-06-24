@@ -95,7 +95,7 @@ function buildDefaultCharacter(id) {
   });
 
   const skills = {};
-  CONFIG.skills.forEach(s => { skills[s.id] = { origin: 0, rank: 0 }; });
+  CONFIG.skills.forEach(s => { skills[s.id] = { bonus: 0, rank: 0 }; });
 
   return {
     id,
@@ -349,7 +349,7 @@ function renderTabAbilities(char) {
   skillsHeader.className = 'skill-row';
   skillsHeader.style.fontSize = '0.75rem';
   skillsHeader.style.color = 'var(--text-muted)';
-  skillsHeader.innerHTML = `<span></span><span>Skill</span><span>Origin</span><span>Rank</span><span>Total</span>`;
+  skillsHeader.innerHTML = `<span></span><span>Skill</span><span>Bonus</span><span>Rank</span><span>Total</span>`;
   panel.appendChild(skillsHeader);
 
   const skillsWrap = document.createElement('div');
@@ -541,19 +541,19 @@ function buildAbilityCard(statDef, char) {
 function buildSkillRow(skillDef, char) {
   const row = document.createElement('div');
   row.className = 'skill-row';
-  const skillData = char.skills[skillDef.id] || { origin: 0, rank: 0 };
-  const total = (skillData.origin || 0) + (skillData.rank || 0);
+  const skillData = char.skills[skillDef.id] || { bonus: 0, rank: 0 };
+  const total = (skillData.bonus || 0) + (skillData.rank || 0);
 
   row.innerHTML = `
     <button class="skill-roll-btn" data-roll-skill="${skillDef.id}" title="Roll ${skillDef.label}">🎲</button>
     <span class="skill-name">${skillDef.label}</span>
-    <input class="currency-input" style="width:40px" type="number" min="0" value="${skillData.origin || 0}" data-skill-origin="${skillDef.id}">
+    <input class="currency-input" style="width:40px" type="number" min="0" value="${skillData.bonus || 0}" data-skill-bonus="${skillDef.id}">
     <input class="currency-input" style="width:40px" type="number" min="0" max="12" value="${skillData.rank || 0}" data-skill-rank="${skillDef.id}">
     <span class="skill-bonus" id="skill-total-${skillDef.id}">${total}</span>
   `;
 
-  row.querySelector('[data-skill-origin]').addEventListener('change', e => {
-    getChar().skills[skillDef.id].origin = parseInt(e.target.value) || 0;
+  row.querySelector('[data-skill-bonus]').addEventListener('change', e => {
+    getChar().skills[skillDef.id].bonus = parseInt(e.target.value) || 0;
     refreshSkillTotal(skillDef.id);
     scheduleSave();
   });
@@ -567,7 +567,7 @@ function buildSkillRow(skillDef, char) {
 
   row.querySelector('[data-roll-skill]').addEventListener('click', () => {
     const s = getChar().skills[skillDef.id];
-    const total2 = (s.origin || 0) + (s.rank || 0);
+    const total2 = (s.bonus || 0) + (s.rank || 0);
     const formula = buildTestFormula(total2);
     window.Roll20Bridge.sendToRoll20({ label: skillDef.label, formula, characterName: getChar()?.name || 'Character' });
   });
@@ -576,8 +576,8 @@ function buildSkillRow(skillDef, char) {
 }
 
 function getSkillTotal(skillId, char) {
-  const s = char.skills[skillId] || { origin: 0, rank: 0 };
-  return (s.origin || 0) + (s.rank || 0);
+  const s = char.skills[skillId] || { bonus: 0, rank: 0 };
+  return (s.bonus || 0) + (s.rank || 0);
 }
 
 function refreshSkillTotal(skillId) {
