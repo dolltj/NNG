@@ -200,7 +200,7 @@ function renderSheet() {
   renderTabInfo(char);
   renderTabAbilities(char);
   renderTabCombat(char);
-  renderTabSpells(char);
+  renderTabPsycasts(char);
   renderTabEquipment(char);
   renderTabNotes(char);
   renderDiceOverlay();
@@ -746,85 +746,19 @@ function renderAttacksTable(char) {
 }
 
 // -----------------------------------------------
-// TAB: SPELLS
+// TAB: PSYCASTS
 // -----------------------------------------------
-function renderTabSpells(char) {
-  const panel = document.getElementById('tab-spells');
-  panel.innerHTML = `<div class="section-header">Spellcasting</div>`;
+function renderTabPsycasts(char) {
+  const panel = document.getElementById('tab-psycasts');
+  panel.innerHTML = `<div class="section-header">Psycasts <span style="color:var(--text-muted);font-size:0.8rem">(${(char.psycasts || []).length}/14)</span></div>
+    <div id="psycasts-list"></div>`;
 
-  const levels = [
-    { key: 'cantrips', label: 'Cantrips', slots: 0 },
-    { key: 'level1',   label: '1st Level', slots: char.resources.spell_slots?.max || 0 },
-    { key: 'level2',   label: '2nd Level', slots: 0 },
-    { key: 'level3',   label: '3rd Level', slots: 0 },
-    { key: 'level4',   label: '4th Level', slots: 0 },
-    { key: 'level5',   label: '5th Level', slots: 0 },
-    { key: 'level6',   label: '6th Level', slots: 0 },
-    { key: 'level7',   label: '7th Level', slots: 0 },
-    { key: 'level8',   label: '8th Level', slots: 0 },
-    { key: 'level9',   label: '9th Level', slots: 0 }
-  ];
-
-  levels.forEach(lvl => {
-    const spells = char.spells[lvl.key] || [];
-    const block  = document.createElement('div');
-    block.className = 'spell-level-block';
-    block.innerHTML = `
-      <div class="spell-level-header">
-        <span class="spell-level-title">${lvl.label}</span>
-      </div>
-      <ul class="spell-list" id="spells-${lvl.key}">
-        ${spells.map((sp, i) => `
-          <li class="spell-item ${sp.prepared ? 'prepared' : ''}" data-idx="${i}" data-lvl="${lvl.key}">
-            <div class="spell-prepared-dot" title="Toggle prepared"></div>
-            <span class="spell-name">${escHtml(sp.name)}</span>
-            ${sp.school ? `<span class="spell-school-badge">${escHtml(sp.school)}</span>` : ''}
-            <button class="delete-item-btn" style="opacity:0">✕</button>
-          </li>`).join('')}
-      </ul>
-      <div class="flex gap-sm mt-sm">
-        <input class="field-input" placeholder="Spell name" id="spell-input-${lvl.key}" style="flex:2">
-        <input class="field-input" placeholder="School" id="spell-school-${lvl.key}" style="flex:1">
-        <button class="btn btn-secondary" data-add-spell="${lvl.key}">＋</button>
-      </div>
-    `;
-
-    // Add spell
-    block.querySelector(`[data-add-spell]`).addEventListener('click', () => {
-      const nameEl   = block.querySelector(`#spell-input-${lvl.key}`);
-      const schoolEl = block.querySelector(`#spell-school-${lvl.key}`);
-      const name = nameEl.value.trim();
-      if (!name) return;
-      getChar().spells[lvl.key].push({ name, school: schoolEl.value.trim(), prepared: false });
-      nameEl.value = ''; schoolEl.value = '';
-      scheduleSave();
-      renderTabSpells(getChar());
-    });
-
-    panel.appendChild(block);
-  });
-
-  // Wire up prepared toggles and deletes
-  panel.querySelectorAll('.spell-item').forEach(item => {
-    item.querySelector('.spell-prepared-dot').addEventListener('click', () => {
-      const lvl2 = item.dataset.lvl;
-      const idx  = parseInt(item.dataset.idx);
-      const sp   = getChar().spells[lvl2][idx];
-      sp.prepared = !sp.prepared;
-      item.classList.toggle('prepared', sp.prepared);
-      scheduleSave();
-    });
-
-    const delBtn = item.querySelector('.delete-item-btn');
-    item.addEventListener('mouseenter', () => delBtn.style.opacity = '1');
-    item.addEventListener('mouseleave', () => delBtn.style.opacity = '0');
-    delBtn.addEventListener('click', () => {
-      const lvl2 = item.dataset.lvl;
-      const idx  = parseInt(item.dataset.idx);
-      getChar().spells[lvl2].splice(idx, 1);
-      scheduleSave();
-      renderTabSpells(getChar());
-    });
+  buildTextEntryList(document.getElementById('psycasts-list'), char.psycasts, {
+    maxCount: 14,
+    secondFieldLabel: 'Description',
+    secondFieldType: 'text',
+    addButtonLabel: '+ Add Psycast',
+    onChange: () => renderTabPsycasts(getChar())
   });
 }
 
