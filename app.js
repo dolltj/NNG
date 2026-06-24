@@ -768,7 +768,7 @@ function renderTabPsycasts(char) {
 function renderTabEquipment(char) {
   const panel = document.getElementById('tab-equipment');
   const capacity = deriveCarryingCapacity(char);
-  const usedWeight = (char.equipment || []).reduce((sum, item) => sum + (item.weight || 0), 0);
+  const usedWeight = Math.round((char.equipment || []).reduce((sum, item) => sum + (item.weight || 0), 0) * 100) / 100;
 
   panel.innerHTML = `
     <div class="section-header">Carrying Capacity</div>
@@ -984,7 +984,7 @@ function buildTextEntryList(container, items, opts) {
   form.className = 'flex gap-sm mt-md flex-wrap';
   form.innerHTML = `
     <input class="field-input" placeholder="Name" id="${uid}-name" style="flex:2">
-    <input class="field-input" placeholder="${secondFieldLabel}" id="${uid}-second" type="${secondFieldType === 'number' ? 'number' : 'text'}" style="flex:2">
+    <input class="field-input" placeholder="${secondFieldLabel}" id="${uid}-second" type="${secondFieldType === 'number' ? 'number' : 'text'}" ${secondFieldType === 'number' ? 'min="0"' : ''} style="flex:2">
     <button class="btn btn-secondary" id="${uid}-add">${addButtonLabel}</button>
   `;
   container.appendChild(form);
@@ -994,7 +994,7 @@ function buildTextEntryList(container, items, opts) {
     if (!name) return;
     const secondVal = form.querySelector(`#${uid}-second`).value;
     const entry = { name };
-    entry[secondFieldType === 'number' ? 'weight' : 'description'] = secondFieldType === 'number' ? (parseFloat(secondVal) || 0) : secondVal.trim();
+    entry[secondFieldType === 'number' ? 'weight' : 'description'] = secondFieldType === 'number' ? Math.max(0, parseFloat(secondVal) || 0) : secondVal.trim();
     items.push(entry);
     scheduleSave();
     onChange();
