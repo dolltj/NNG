@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "dice": { "test": "2d10" },
   "core_stats": [
-    { "id": "strength",  "label": "Strength",  "abbr": "STR", "default": 5 },
-    { "id": "agility",   "label": "Agility",   "abbr": "AGI", "default": 5 },
-    { "id": "fortitude", "label": "Fortitude", "abbr": "FOR", "default": 5 },
-    { "id": "willpower", "label": "Willpower", "abbr": "WIL", "default": 5 }
+    { "id": "strength",  "label": "Strength",  "abbr": "STR", "default": 3 },
+    { "id": "agility",   "label": "Agility",   "abbr": "AGI", "default": 3 },
+    { "id": "fortitude", "label": "Fortitude", "abbr": "FOR", "default": 3 },
+    { "id": "willpower", "label": "Willpower", "abbr": "WIL", "default": 3 }
   ],
   "tracked_resources": [
     { "id": "hp",      "label": "Hit Points", "has_max": true, "derived_max": true,  "default_current": 50, "color": "#e74c3c", "show_bar": true },
