@@ -789,14 +789,14 @@ function renderTabPsycasts(char) {
 function renderTabEquipment(char) {
   const panel = document.getElementById('tab-equipment');
   const capacity = deriveCarryingCapacity(char);
-  const usedWeight = Math.round((char.equipment || []).reduce((sum, item) => sum + (item.weight || 0), 0) * 100) / 100;
+  const usedSlots = (char.equipment || []).length;
 
   panel.innerHTML = `
     <div class="section-header">Carrying Capacity</div>
     <div class="combat-stats-row">
       <div class="combat-stat-chip">
         <span class="combat-stat-chip-label">Capacity</span>
-        <span class="combat-stat-chip-value">${usedWeight} / ${capacity} lbs</span>
+        <span class="combat-stat-chip-value">${usedSlots} / ${capacity} slots</span>
       </div>
     </div>
 
@@ -806,8 +806,8 @@ function renderTabEquipment(char) {
 
   buildTextEntryList(document.getElementById('equipment-list'), char.equipment, {
     maxCount: Infinity,
-    secondFieldLabel: 'Weight (lbs)',
-    secondFieldType: 'number',
+    secondFieldLabel: 'Description',
+    secondFieldType: 'text',
     addButtonLabel: '+ Add Item',
     onChange: () => renderTabEquipment(getChar())
   });
@@ -861,11 +861,11 @@ function importCharacter() {
 
 // -----------------------------------------------
 // SHARED: simple name(+second field) entry list
-// Used by Perks, Psycasts, Injuries, Critical Injuries.
+// Used by Perks, Psycasts, Injuries, Critical Injuries, Equipment.
 // secondFieldType determines the stored property name: 'number' -> weight,
 // anything else -> description. This is a closed-world assumption matching
-// the 4 known call sites (Perks/Injuries/Critical Injuries/Psycasts use
-// text+description, Equipment uses number+weight), not a free-form type hint.
+// the known call sites (all of them currently use text+description), not a
+// free-form type hint.
 // secondFieldLabel/addButtonLabel must be static developer-supplied strings,
 // not character/user data, since they're interpolated into innerHTML unescaped.
 // -----------------------------------------------
