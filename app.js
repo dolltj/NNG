@@ -570,51 +570,46 @@ function recalcDerivedStats() {
 }
 
 // -----------------------------------------------
-// TAB: COMBAT / ATTACKS
+// TAB: COMBAT
 // -----------------------------------------------
 function renderTabCombat(char) {
   const panel = document.getElementById('tab-combat');
   panel.innerHTML = `
-    <div class="section-header">Attacks & Actions</div>
+    <div class="section-header">Combat Stats</div>
+    <div class="combat-stats-row" id="combat-stats-row"></div>
+
+    <div class="section-header mt-md">Weapons</div>
     <table class="attacks-table" id="attacks-table">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Attack Roll</th>
+          <th>Weapon</th>
+          <th>Skill</th>
+          <th>Attack</th>
           <th>Damage</th>
-          <th>Type</th>
           <th>Range</th>
-          <th>Notes</th>
+          <th>Ammo</th>
           <th></th>
         </tr>
       </thead>
       <tbody id="attacks-tbody"></tbody>
     </table>
     <div class="flex gap-sm mt-md flex-wrap">
-      <button class="btn btn-secondary" id="add-attack-btn">＋ Add Attack</button>
-      <button class="btn btn-secondary" id="roll-initiative-btn">🎲 Roll Initiative</button>
+      <button class="btn btn-secondary" id="add-weapon-btn">＋ Add Weapon</button>
     </div>
     <div class="attack-form mt-md" id="attack-form">
-      <input class="field-input" id="atk-name"    placeholder="Attack name" style="flex:2">
-      <input class="field-input" id="atk-damage"  placeholder="Damage (e.g. 1d8)" style="flex:1">
-      <select class="field-input" id="atk-stat"   style="flex:1">
-        ${CONFIG.core_stats.map(s => `<option value="${s.id}">${s.label}</option>`).join('')}
-      </select>
-      <select class="field-input" id="atk-dmgtype" style="flex:1">
-        ${CONFIG.damage_types.map(d => `<option value="${d}">${d}</option>`).join('')}
-      </select>
-      <input class="field-input" id="atk-range"   placeholder="Range" style="flex:1">
-      <label style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:0.85rem">
-        <input type="checkbox" id="atk-prof" checked> Proficient
-      </label>
+      <input class="field-input" id="atk-name"   placeholder="Weapon name" style="flex:2">
+      <input class="field-input" id="atk-damage" placeholder="Damage (e.g. 2d6)" style="flex:1">
+      <input class="field-input" id="atk-range"  placeholder="Range" style="flex:1">
+      <input class="field-input" id="atk-ammo-max" placeholder="Ammo max" type="number" min="0" style="flex:1">
       <button class="btn btn-primary" id="atk-save-btn">Add</button>
       <button class="btn btn-secondary" id="atk-cancel-btn">Cancel</button>
     </div>
   `;
 
+  buildCombatStatsRow(char);
   renderAttacksTable(char);
 
-  document.getElementById('add-attack-btn').addEventListener('click', () => {
+  document.getElementById('add-weapon-btn').addEventListener('click', () => {
     document.getElementById('attack-form').classList.toggle('open');
   });
   document.getElementById('atk-cancel-btn').addEventListener('click', () => {
@@ -623,76 +618,125 @@ function renderTabCombat(char) {
   document.getElementById('atk-save-btn').addEventListener('click', () => {
     const name = document.getElementById('atk-name').value.trim();
     if (!name) return;
-    const newAtk = {
-      id:          'custom_' + Date.now(),
-      label:       name,
-      attack_stat: document.getElementById('atk-stat').value,
-      attack_roll: '1d20',
-      damage:      document.getElementById('atk-damage').value || '1d4',
-      damage_type: document.getElementById('atk-dmgtype').value,
-      proficient:  document.getElementById('atk-prof').checked,
-      range:       document.getElementById('atk-range').value,
-      notes:       ''
-    };
-    getChar().attacks.push(newAtk);
+    const ammoMax = parseInt(document.getElementById('atk-ammo-max').value) || 0;
+    getChar().weapons.push({
+      id:      'weapon_' + Date.now(),
+      label:   name,
+      damage:  document.getElementById('atk-damage').value || '1d4',
+      range:   document.getElementById('atk-range').value,
+      skill_id: CONFIG.skills[0].id,
+      ammo:    ammoMax > 0 ? { current: ammoMax, max: ammoMax } : null
+    });
     scheduleSave();
     document.getElementById('attack-form').classList.remove('open');
-    document.getElementById('atk-name').value   = '';
-    document.getElementById('atk-damage').value = '';
-    document.getElementById('atk-range').value  = '';
+    document.getElementById('atk-name').value     = '';
+    document.getElementById('atk-damage').value   = '';
+    document.getElementById('atk-range').value    = '';
+    document.getElementById('atk-ammo-max').value = '';
     renderAttacksTable(getChar());
   });
+}
+
+function buildCombatStatsRow(char) {
+  const wrap = document.getElementById('combat-stats-row');
+  wrap.innerHTML = '';
+
+  const chips = [
+    { label: 'Head Armor', value: char.armor.head, field: 'head' },
+    { label: 'Body Armor', value: char.armor.body, field: 'body' },
+    { label: 'Speed',      value: char.speed,       field: 'speed' }
+  ];
+
+  chips.forEach(chip => {
+    const el = document.createElement('div');
+    el.className = 'combat-stat-chip';
+    el.innerHTML = `
+      <span class="combat-stat-chip-label">${chip.label}</span>
+      <span class="combat-stat-chip-value">
+        <input type="number" value="${chip.value}" data-combat-field="${chip.field}" style="width:48px">
+      </span>`;
+    el.querySelector('input').addEventListener('change', e => {
+      const v = parseInt(e.target.value) || 0;
+      if (chip.field === 'speed') getChar().speed = v;
+      else getChar().armor[chip.field] = v;
+      scheduleSave();
+    });
+    wrap.appendChild(el);
+  });
+
+  const initEl = document.createElement('div');
+  initEl.className = 'combat-stat-chip';
+  initEl.innerHTML = `
+    <span class="combat-stat-chip-label">Initiative</span>
+    <span class="combat-stat-chip-value">
+      <button class="ability-roll-btn" id="roll-initiative-btn">🎲 Roll</button>
+    </span>`;
+  wrap.appendChild(initEl);
 
   document.getElementById('roll-initiative-btn').addEventListener('click', () => {
-    const char2 = getChar();
-    const dexMod = computeModifier(char2.core_stats.dexterity || 10);
-    const bonus  = (char2.combat.initiative_bonus || 0) + dexMod;
-    const formula = bonus >= 0 ? `1d20 + ${bonus}` : `1d20 - ${Math.abs(bonus)}`;
+    const agi = getChar().core_stats.agility ?? 0;
+    const formula = buildTestFormula(agi);
     const result  = evaluateDiceExpression(formula);
-    showRollModal({ label: 'Initiative', type: 'initiative', formula, ...result, critStatus: checkCrit(result.rolls) });
+    showRollModal({ label: 'Initiative', type: 'initiative', formula, ...result });
   });
 }
 
 function renderAttacksTable(char) {
   const tbody = document.getElementById('attacks-tbody');
-  if (!tbody) return;
   tbody.innerHTML = '';
 
-  (char.attacks || []).forEach(atk => {
-    const atkFormula = buildAttackFormula(atk, char, CONFIG);
-    const dmgFormula = buildDamageFormula(atk, char, CONFIG);
-    const dmgType    = atk.damage_type || 'physical';
-    const dmgColor   = `var(--dmg-${dmgType.replace(/\s+/g, '')}, var(--text-muted))`;
-
+  (char.weapons || []).forEach(weapon => {
     const tr = document.createElement('tr');
+    const ammoText = weapon.ammo ? `${weapon.ammo.current}/${weapon.ammo.max}` : '—';
+
     tr.innerHTML = `
-      <td><strong>${escHtml(atk.label)}</strong></td>
+      <td><strong>${escHtml(weapon.label)}</strong></td>
       <td>
-        <button class="attack-roll-btn" data-atk-id="${atk.id}">🎲 ${atkFormula}</button>
+        <select class="field-input" data-weapon-skill="${weapon.id}" style="font-size:0.8rem">
+          ${CONFIG.skills.map(s => `<option value="${s.id}" ${s.id === weapon.skill_id ? 'selected' : ''}>${s.label}</option>`).join('')}
+        </select>
       </td>
-      <td>
-        <button class="damage-roll-btn" data-atk-id="${atk.id}">⚔ ${dmgFormula}</button>
+      <td><button class="attack-roll-btn" data-wpn-id="${weapon.id}">🎲 2d10</button></td>
+      <td><button class="damage-roll-btn" data-wpn-id="${weapon.id}">⚔ ${escHtml(weapon.damage)}</button></td>
+      <td style="font-size:0.8rem;color:var(--text-muted)">${escHtml(weapon.range || '—')}</td>
+      <td style="font-size:0.8rem;color:var(--text-muted)">
+        ${weapon.ammo
+          ? `<input class="currency-input" style="width:50px" type="number" min="0" max="${weapon.ammo.max}" value="${weapon.ammo.current}" data-ammo-current="${weapon.id}">/${weapon.ammo.max}`
+          : '—'}
       </td>
-      <td><span class="damage-type-badge" style="color:${dmgColor};border-color:${dmgColor}">${escHtml(dmgType)}</span></td>
-      <td style="font-size:0.8rem;color:var(--text-muted)">${escHtml(atk.range || '—')}</td>
-      <td style="font-size:0.75rem;color:var(--text-muted);max-width:100px">${escHtml(atk.notes || '')}</td>
-      <td><button class="delete-attack-btn" data-atk-id="${atk.id}" title="Remove">✕</button></td>
+      <td><button class="delete-attack-btn" data-wpn-id="${weapon.id}" title="Remove">✕</button></td>
     `;
 
+    tr.querySelector('[data-weapon-skill]').addEventListener('change', e => {
+      weapon.skill_id = e.target.value;
+      scheduleSave();
+    });
+
     tr.querySelector('.attack-roll-btn').addEventListener('click', () => {
-      const result = evaluateDiceExpression(atkFormula);
-      showRollModal({ label: `${atk.label} — Attack`, type: 'attack', formula: atkFormula, ...result, critStatus: checkCrit(result.rolls) });
+      const total = getSkillTotal(weapon.skill_id, getChar());
+      const formula = buildTestFormula(total);
+      const result  = evaluateDiceExpression(formula);
+      showRollModal({ label: `${weapon.label} — Attack`, type: 'attack', formula, ...result });
     });
 
     tr.querySelector('.damage-roll-btn').addEventListener('click', () => {
-      const result = evaluateDiceExpression(dmgFormula);
-      showRollModal({ label: `${atk.label} — Damage`, type: 'damage', formula: dmgFormula, ...result, damageType: dmgType, critStatus: null });
+      const result = evaluateDiceExpression(weapon.damage);
+      showRollModal({ label: `${weapon.label} — Damage`, type: 'damage', formula: weapon.damage, ...result });
     });
 
+    const ammoInput = tr.querySelector('[data-ammo-current]');
+    if (ammoInput) {
+      ammoInput.addEventListener('change', e => {
+        weapon.ammo.current = Math.max(0, Math.min(weapon.ammo.max, parseInt(e.target.value) || 0));
+        scheduleSave();
+        renderAttacksTable(getChar());
+      });
+    }
+
     tr.querySelector('.delete-attack-btn').addEventListener('click', () => {
-      if (!confirm(`Remove attack "${atk.label}"?`)) return;
+      if (!confirm(`Remove weapon "${weapon.label}"?`)) return;
       const c = getChar();
-      c.attacks = c.attacks.filter(a => a.id !== atk.id);
+      c.weapons = c.weapons.filter(w => w.id !== weapon.id);
       scheduleSave();
       renderAttacksTable(c);
     });
