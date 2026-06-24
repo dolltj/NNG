@@ -37,7 +37,6 @@
   --color-hp:      #e74c3c;
   --color-hp-low:  #ff2222;
   --color-temphp:  #3498db;
-  --color-spell:   #9b59b6;
   --color-hitdie:  #e67e22;
   --color-insp:    #f1c40f;
 
@@ -814,13 +813,6 @@ textarea.field-input {
 
 .combat-stat-chip-value input:focus { outline: none; }
 
-.proficiency-chip {
-  background: linear-gradient(135deg, rgba(196,160,80,0.08), rgba(196,160,80,0.02));
-  border-color: var(--border-accent);
-}
-
-.proficiency-chip .combat-stat-chip-value { color: var(--gold); }
-
 /* =============================================
    SKILLS LIST
    ============================================= */
@@ -848,28 +840,6 @@ textarea.field-input {
 .skill-row:hover {
   background: var(--bg-raised);
   border-color: var(--border-subtle);
-}
-
-.proficiency-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border-mid);
-  background: transparent;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.proficiency-dot.proficient {
-  background: var(--gold);
-  border-color: var(--gold);
-  box-shadow: 0 0 6px rgba(196,160,80,0.5);
-}
-
-.proficiency-dot.expertise {
-  background: transparent;
-  border-color: var(--gold);
-  box-shadow: inset 0 0 0 2px var(--gold-dim), 0 0 6px rgba(196,160,80,0.4);
 }
 
 .skill-bonus {
@@ -915,46 +885,6 @@ textarea.field-input {
 
 .skill-row:hover .skill-roll-btn { opacity: 1; }
 .skill-roll-btn:hover { color: var(--gold); }
-
-/* =============================================
-   SAVING THROWS
-   ============================================= */
-.saves-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--space-sm);
-  margin-bottom: var(--space-lg);
-}
-
-.save-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm);
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.save-row:hover {
-  border-color: var(--border-mid);
-  background: var(--bg-hover);
-}
-
-.save-label {
-  flex: 1;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.save-bonus {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-}
 
 /* =============================================
    ATTACKS TABLE
@@ -1066,127 +996,6 @@ tr:hover .delete-attack-btn { opacity: 1; }
 }
 
 /* =============================================
-   CONDITIONS TRACKER
-   ============================================= */
-.conditions-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-lg);
-}
-
-.condition-chip {
-  background: var(--bg-card);
-  border: 1px solid var(--border-mid);
-  border-radius: var(--radius-full);
-  padding: 4px 12px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  color: var(--text-muted);
-  user-select: none;
-}
-
-.condition-chip:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-
-.condition-chip.active {
-  background: rgba(231,76,60,0.15);
-  border-color: var(--color-hp);
-  color: #ff7070;
-}
-
-/* =============================================
-   SPELLS TAB
-   ============================================= */
-.spell-level-block {
-  margin-bottom: var(--space-lg);
-}
-
-.spell-level-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
-}
-
-.spell-level-title {
-  font-family: var(--font-display);
-  font-size: 0.8rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-accent);
-}
-
-.spell-slot-pips {
-  display: flex;
-  gap: 4px;
-}
-
-.slot-pip {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  border: 1.5px solid var(--color-spell);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.slot-pip.used { background: var(--color-spell); }
-.slot-pip:hover { transform: scale(1.3); }
-
-.spell-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.spell-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: 6px var(--space-sm);
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-size: 0.85rem;
-}
-
-.spell-item:hover {
-  background: var(--bg-raised);
-  border-color: var(--border-subtle);
-}
-
-.spell-item.prepared .spell-prepared-dot {
-  background: var(--color-spell);
-  box-shadow: 0 0 6px rgba(155,89,182,0.5);
-}
-
-.spell-prepared-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  border: 1.5px solid var(--color-spell);
-  flex-shrink: 0;
-  transition: all var(--transition-fast);
-}
-
-.spell-name {
-  flex: 1;
-  color: var(--text-secondary);
-}
-
-.spell-school-badge {
-  font-size: 0.6rem;
-  font-family: var(--font-display);
-  letter-spacing: 0.08em;
-  color: var(--color-spell);
-  background: rgba(155,89,182,0.1);
-  padding: 1px 6px;
-  border-radius: var(--radius-full);
-  border: 1px solid rgba(155,89,182,0.2);
-}
-
-/* =============================================
    EQUIPMENT TAB
    ============================================= */
 .equipment-list {
@@ -1236,33 +1045,6 @@ tr:hover .delete-attack-btn { opacity: 1; }
 .equipment-item:hover .delete-item-btn { opacity: 1; }
 .delete-item-btn:hover { color: var(--color-hp); }
 
-.currency-row {
-  display: flex;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-lg);
-}
-
-.currency-chip {
-  background: var(--bg-card);
-  border: 1px solid var(--border-mid);
-  border-radius: var(--radius-md);
-  padding: var(--space-sm) var(--space-md);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 70px;
-}
-
-.currency-label {
-  font-size: 0.65rem;
-  font-family: var(--font-display);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
 .currency-input {
   background: none;
   border: none;
@@ -1275,13 +1057,6 @@ tr:hover .delete-attack-btn { opacity: 1; }
 }
 
 .currency-input:focus { outline: none; }
-
-/* Gold/Silver/Copper colors */
-.currency-chip:nth-child(1) .currency-label { color: #f1c40f; }
-.currency-chip:nth-child(2) .currency-label { color: #bdc3c7; }
-.currency-chip:nth-child(3) .currency-label { color: #e67e22; }
-.currency-chip:nth-child(4) .currency-label { color: #e8c060; }
-.currency-chip:nth-child(5) .currency-label { color: #8e44ad; }
 
 /* =============================================
    NOTES TAB
@@ -1380,25 +1155,6 @@ tr:hover .delete-attack-btn { opacity: 1; }
   transition: all var(--transition-fast);
 }
 
-.die-result.crit-hit {
-  border-color: #f1c40f;
-  color: #f1c40f;
-  box-shadow: 0 0 16px rgba(241,196,15,0.4);
-  animation: crit-pulse 0.5s ease;
-}
-
-.die-result.crit-fail {
-  border-color: var(--color-hp);
-  color: var(--color-hp);
-  box-shadow: 0 0 16px rgba(231,76,60,0.4);
-}
-
-@keyframes crit-pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); }
-  100% { transform: scale(1); }
-}
-
 .roll-total {
   font-family: var(--font-display);
   font-size: 3.5rem;
@@ -1408,9 +1164,6 @@ tr:hover .delete-attack-btn { opacity: 1; }
   margin-bottom: var(--space-sm);
   text-shadow: 0 0 30px rgba(255,255,255,0.2);
 }
-
-.roll-total.crit-hit { color: #f1c40f; text-shadow: 0 0 30px rgba(241,196,15,0.5); }
-.roll-total.crit-fail { color: var(--color-hp); }
 
 .roll-breakdown {
   font-size: 0.8rem;
@@ -1428,8 +1181,6 @@ tr:hover .delete-attack-btn { opacity: 1; }
   min-height: 1.5em;
 }
 
-.roll-crit-label.crit-hit  { color: #f1c40f; }
-.roll-crit-label.crit-fail { color: var(--color-hp); }
 
 .roll-actions {
   display: flex;
