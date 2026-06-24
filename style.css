@@ -817,13 +817,9 @@ textarea.field-input {
    SKILLS LIST
    ============================================= */
 .skills-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-sm);
-}
-
-@media (max-width: 600px) {
-  .skills-columns { grid-template-columns: 1fr; }
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .skill-row {
