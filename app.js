@@ -500,7 +500,7 @@ function buildAbilityCard(statDef, char) {
     <button class="ability-roll-btn" data-roll-stat="${statDef.id}">🎲 Test</button>
   `;
 
-  card.querySelector('.ability-score-input').addEventListener('input', e => {
+  card.querySelector('.ability-score-input').addEventListener('change', e => {
     const newVal = Math.max(0, Math.min(20, parseInt(e.target.value) || 0));
     getChar().core_stats[statDef.id] = newVal;
     recalcDerivedStats();
