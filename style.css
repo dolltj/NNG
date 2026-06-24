@@ -1181,7 +1181,6 @@ tr:hover .delete-attack-btn { opacity: 1; }
   min-height: 1.5em;
 }
 
-
 .roll-actions {
   display: flex;
   gap: var(--space-sm);
