@@ -307,22 +307,29 @@ function renderTabAbilities(char) {
   const panel = document.getElementById('tab-abilities');
   panel.innerHTML = '';
 
+  function addSectionHeader(text, extraClass = '') {
+    const header = document.createElement('div');
+    header.className = `section-header ${extraClass}`.trim();
+    header.textContent = text;
+    panel.appendChild(header);
+  }
+
   // --- Ability Scores ---
-  panel.innerHTML += `<div class="section-header">Ability Scores</div>`;
+  addSectionHeader('Ability Scores');
   const abGrid = document.createElement('div');
   abGrid.className = 'ability-scores-grid';
   CONFIG.core_stats.forEach(s => abGrid.appendChild(buildAbilityCard(s, char)));
   panel.appendChild(abGrid);
 
   // --- Resources (HP, Fatigue) ---
-  panel.innerHTML += `<div class="section-header mt-md">Resources</div>`;
+  addSectionHeader('Resources', 'mt-md');
   const resGrid = document.createElement('div');
   resGrid.className = 'resources-grid';
   CONFIG.tracked_resources.forEach(r => resGrid.appendChild(buildResourceCard(r, char)));
   panel.appendChild(resGrid);
 
   // --- Derived stats (read-only) ---
-  panel.innerHTML += `<div class="section-header mt-md">Derived</div>`;
+  addSectionHeader('Derived', 'mt-md');
   const derivedRow = document.createElement('div');
   derivedRow.className = 'combat-stats-row';
   derivedRow.innerHTML = `
@@ -338,7 +345,7 @@ function renderTabAbilities(char) {
   panel.appendChild(derivedRow);
 
   // --- Skills ---
-  panel.innerHTML += `<div class="section-header mt-md">Skills</div>`;
+  addSectionHeader('Skills', 'mt-md');
   const skillsHeader = document.createElement('div');
   skillsHeader.className = 'skill-row';
   skillsHeader.style.fontSize = '0.75rem';
@@ -352,7 +359,7 @@ function renderTabAbilities(char) {
   panel.appendChild(skillsWrap);
 
   // --- Injuries ---
-  panel.innerHTML += `<div class="section-header mt-md">Injuries</div>`;
+  addSectionHeader('Injuries', 'mt-md');
   const injuriesWrap = document.createElement('div');
   injuriesWrap.id = 'injuries-list';
   panel.appendChild(injuriesWrap);
@@ -365,7 +372,7 @@ function renderTabAbilities(char) {
   });
 
   // --- Critical Injuries ---
-  panel.innerHTML += `<div class="section-header mt-md">Critical Injuries</div>`;
+  addSectionHeader('Critical Injuries', 'mt-md');
   const critInjuriesWrap = document.createElement('div');
   critInjuriesWrap.id = 'critical-injuries-list';
   panel.appendChild(critInjuriesWrap);
