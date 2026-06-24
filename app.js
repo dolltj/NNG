@@ -139,8 +139,7 @@ function renderRoster() {
       <button class="roster-card-delete" title="Delete character" data-id="${char.id}">✕</button>
       <div class="roster-card-name">${escHtml(char.name)}</div>
       <div class="roster-card-info">
-        ${char.race    ? `<span>${escHtml(char.race)}</span>` : ''}
-        ${char.class   ? `<span>${escHtml(char.class)}</span>` : ''}
+        ${char.origin  ? `<span>${escHtml(char.origin)}</span>` : ''}
         <span>Lv ${char.level}</span>
       </div>
     `;
