@@ -686,7 +686,7 @@ textarea.field-input {
   font-family: var(--font-display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-bottom: var(--space-sm);
 }
 
@@ -805,7 +805,7 @@ textarea.field-input {
   font-family: var(--font-display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .combat-stat-chip-value {
@@ -879,6 +879,7 @@ textarea.field-input {
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  min-height: 38px;
   padding: 6px var(--space-sm);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -928,11 +929,9 @@ textarea.field-input {
   font-size: 0.8rem;
   padding: 2px;
   border-radius: 3px;
-  opacity: 0;
   transition: all var(--transition-fast);
 }
 
-.skill-row:hover .skill-roll-btn { opacity: 1; }
 .skill-roll-btn:hover { color: var(--gold); }
 
 /* =============================================
