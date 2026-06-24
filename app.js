@@ -844,20 +844,18 @@ function renderDiceOverlay() {
 
 function showRollModal(rollData) {
   ACTIVE_ROLL = rollData;
-  const overlay  = document.getElementById('roll-overlay');
-  const critStatus = rollData.critStatus;
+  const overlay = document.getElementById('roll-overlay');
 
-  document.getElementById('roll-label').textContent   = rollData.label || 'Roll';
-  document.getElementById('roll-formula').textContent = rollData.formula || '';
-  document.getElementById('roll-total').textContent   = rollData.total;
-  document.getElementById('roll-breakdown').textContent = rollData.breakdown || '';
+  document.getElementById('roll-label').textContent     = rollData.label || 'Roll';
+  document.getElementById('roll-formula').textContent    = rollData.formula || '';
+  document.getElementById('roll-total').textContent      = rollData.total;
+  document.getElementById('roll-breakdown').textContent  = rollData.breakdown || '';
+  document.getElementById('roll-crit-label').textContent = '';
 
-  // Dice display
   const diceDisplay = document.getElementById('roll-dice-display');
   diceDisplay.innerHTML = '';
   (rollData.rolls || []).forEach(r => {
     if (r.results.length === 0) {
-      // Flat modifier
       const chip = document.createElement('div');
       chip.className = 'die-result';
       chip.style.fontSize = '1rem';
@@ -868,31 +866,10 @@ function showRollModal(rollData) {
         const chip = document.createElement('div');
         chip.className = 'die-result';
         chip.textContent = val;
-        if (r.faces === 20) {
-          if (val === 20) chip.classList.add('crit-hit');
-          if (val === 1)  chip.classList.add('crit-fail');
-        }
         diceDisplay.appendChild(chip);
       });
     }
   });
-
-  // Crit label
-  const critLabel = document.getElementById('roll-crit-label');
-  const totalEl   = document.getElementById('roll-total');
-  critLabel.className = 'roll-crit-label';
-  totalEl.className   = 'roll-total';
-  if (critStatus === 'crit_hit') {
-    critLabel.textContent = '⚡ CRITICAL HIT!';
-    critLabel.classList.add('crit-hit');
-    totalEl.classList.add('crit-hit');
-  } else if (critStatus === 'crit_fail') {
-    critLabel.textContent = '💀 CRITICAL FAIL';
-    critLabel.classList.add('crit-fail');
-    totalEl.classList.add('crit-fail');
-  } else {
-    critLabel.textContent = '';
-  }
 
   overlay.classList.add('visible');
   document.addEventListener('keydown', onRollOverlayKey);
