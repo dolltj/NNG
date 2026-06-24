@@ -767,74 +767,29 @@ function renderTabPsycasts(char) {
 // -----------------------------------------------
 function renderTabEquipment(char) {
   const panel = document.getElementById('tab-equipment');
+  const capacity = deriveCarryingCapacity(char);
+  const usedWeight = (char.equipment || []).reduce((sum, item) => sum + (item.weight || 0), 0);
+
   panel.innerHTML = `
-    <div class="section-header">Currency</div>
-    <div class="currency-row">
-      ${buildCurrencyChip('PP', 'pp', char.currency.pp)}
-      ${buildCurrencyChip('GP', 'gp', char.currency.gp)}
-      ${buildCurrencyChip('EP', 'ep', char.currency.ep)}
-      ${buildCurrencyChip('SP', 'sp', char.currency.sp)}
-      ${buildCurrencyChip('CP', 'cp', char.currency.cp)}
+    <div class="section-header">Carrying Capacity</div>
+    <div class="combat-stats-row">
+      <div class="combat-stat-chip">
+        <span class="combat-stat-chip-label">Capacity</span>
+        <span class="combat-stat-chip-value">${usedWeight} / ${capacity} lbs</span>
+      </div>
     </div>
 
-    <div class="section-header">Inventory</div>
-    <div class="equipment-list" id="equipment-list">
-      ${(char.equipment || []).map((item, i) => `
-        <div class="equipment-item" data-idx="${i}">
-          <span class="equipment-qty">${item.qty || 1}×</span>
-          <span class="equipment-name">${escHtml(item.name)}</span>
-          <span style="flex:1;font-size:0.75rem;color:var(--text-muted)">${escHtml(item.notes || '')}</span>
-          <button class="delete-item-btn" title="Remove">✕</button>
-        </div>`).join('')}
-    </div>
-    <div class="flex gap-sm mt-md flex-wrap">
-      <input class="field-input" placeholder="Item name" id="eq-name" style="flex:2">
-      <input class="field-input" placeholder="Qty" id="eq-qty" type="number" min="1" value="1" style="width:70px">
-      <input class="field-input" placeholder="Notes" id="eq-notes" style="flex:2">
-      <button class="btn btn-secondary" id="eq-add-btn">＋ Add Item</button>
-    </div>
+    <div class="section-header mt-md">Gear</div>
+    <div id="equipment-list"></div>
   `;
 
-  // Currency listeners
-  panel.querySelectorAll('[data-currency]').forEach(el => {
-    el.addEventListener('change', () => {
-      getChar().currency[el.dataset.currency] = parseInt(el.value) || 0;
-      scheduleSave();
-    });
+  buildTextEntryList(document.getElementById('equipment-list'), char.equipment, {
+    maxCount: Infinity,
+    secondFieldLabel: 'Weight (lbs)',
+    secondFieldType: 'number',
+    addButtonLabel: '+ Add Item',
+    onChange: () => renderTabEquipment(getChar())
   });
-
-  // Delete items
-  panel.querySelectorAll('.equipment-item .delete-item-btn').forEach(btn => {
-    const item = btn.closest('.equipment-item');
-    item.addEventListener('mouseenter', () => btn.style.opacity = '1');
-    item.addEventListener('mouseleave', () => btn.style.opacity = '0');
-    btn.addEventListener('click', () => {
-      const idx = parseInt(item.dataset.idx);
-      getChar().equipment.splice(idx, 1);
-      scheduleSave();
-      renderTabEquipment(getChar());
-    });
-  });
-
-  // Add item
-  document.getElementById('eq-add-btn').addEventListener('click', () => {
-    const name = document.getElementById('eq-name').value.trim();
-    if (!name) return;
-    getChar().equipment.push({
-      name,
-      qty:   parseInt(document.getElementById('eq-qty').value) || 1,
-      notes: document.getElementById('eq-notes').value.trim()
-    });
-    scheduleSave();
-    renderTabEquipment(getChar());
-  });
-}
-
-function buildCurrencyChip(label, key, value) {
-  return `<div class="currency-chip">
-    <span class="currency-label">${label}</span>
-    <input class="currency-input" type="number" min="0" value="${value || 0}" data-currency="${key}">
-  </div>`;
 }
 
 // -----------------------------------------------
