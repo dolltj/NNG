@@ -594,7 +594,7 @@ textarea.field-input {
   font-size: 0.65rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .ability-score-controls {
@@ -897,6 +897,7 @@ textarea.field-input {
   font-weight: 700;
   font-size: 0.9rem;
   min-width: 28px;
+  margin-left: var(--space-sm);
   text-align: right;
   color: var(--text-primary);
 }
