@@ -345,16 +345,17 @@ function renderTabAbilities(char) {
 
   // --- Skills ---
   addSectionHeader('Skills', 'mt-md');
-  const skillsHeader = document.createElement('div');
-  skillsHeader.className = 'skill-row';
-  skillsHeader.style.fontSize = '0.75rem';
-  skillsHeader.style.color = 'var(--text-muted)';
-  skillsHeader.innerHTML = `<span></span><span>Skill</span><span>Bonus</span><span>Rank</span><span>Total</span>`;
-  panel.appendChild(skillsHeader);
-
   const skillsWrap = document.createElement('div');
   skillsWrap.className = 'skills-columns';
-  CONFIG.skills.forEach(s => skillsWrap.appendChild(buildSkillRow(s, char)));
+  const skillEls = CONFIG.skills.map(s => buildSkillRow(s, char));
+  const mid = Math.ceil(skillEls.length / 2);
+  [skillEls.slice(0, mid), skillEls.slice(mid)].forEach(half => {
+    const col = document.createElement('div');
+    col.className = 'skills-column';
+    col.appendChild(buildSkillsHeaderRow());
+    half.forEach(el => col.appendChild(el));
+    skillsWrap.appendChild(col);
+  });
   panel.appendChild(skillsWrap);
 
   // --- Injuries ---
@@ -538,6 +539,19 @@ function buildAbilityCard(statDef, char) {
   return card;
 }
 
+function buildSkillsHeaderRow() {
+  const row = document.createElement('div');
+  row.className = 'skill-row skills-header-row';
+  row.innerHTML = `
+    <button class="skill-roll-btn" style="visibility:hidden" tabindex="-1">🎲</button>
+    <span class="skill-name">Skill</span>
+    <span class="skill-col-label" style="width:40px">Bonus</span>
+    <span class="skill-col-label" style="width:40px">Rank</span>
+    <span class="skill-bonus skill-col-label">Total</span>
+  `;
+  return row;
+}
+
 function buildSkillRow(skillDef, char) {
   const row = document.createElement('div');
   row.className = 'skill-row';
@@ -662,10 +676,9 @@ function buildCombatStatsRow(char) {
   wrap.innerHTML = '';
 
   const chips = [
-    { label: 'Head Armor',       value: char.armor.head,      field: 'head' },
-    { label: 'Body Armor',       value: char.armor.body,      field: 'body' },
-    { label: 'Speed',            value: char.speed,           field: 'speed' },
-    { label: 'Initiative Bonus', value: char.initiative_bonus, field: 'initiative_bonus' }
+    { label: 'Head Armor', value: char.armor.head, field: 'head' },
+    { label: 'Body Armor', value: char.armor.body, field: 'body' },
+    { label: 'Speed',      value: char.speed,       field: 'speed' }
   ];
 
   chips.forEach(chip => {
@@ -679,29 +692,32 @@ function buildCombatStatsRow(char) {
     el.querySelector('input').addEventListener('change', e => {
       const v = parseInt(e.target.value) || 0;
       if (chip.field === 'speed') getChar().speed = v;
-      else if (chip.field === 'initiative_bonus') getChar().initiative_bonus = v;
       else getChar().armor[chip.field] = v;
       scheduleSave();
     });
     wrap.appendChild(el);
   });
 
-  const initRollEl = document.createElement('div');
-  initRollEl.className = 'combat-stat-chip';
-  initRollEl.innerHTML = `
-    <span class="combat-stat-chip-label">Roll Initiative</span>
-    <span class="combat-stat-chip-value">
-      <button class="ability-roll-btn" id="roll-initiative-btn">🎲 Roll</button>
+  const initEl = document.createElement('div');
+  initEl.className = 'combat-stat-chip';
+  initEl.innerHTML = `
+    <span class="combat-stat-chip-label">Initiative</span>
+    <span class="combat-stat-chip-value combat-stat-chip-value-row">
+      <input type="number" value="${char.initiative_bonus}" data-combat-field="initiative_bonus" style="width:40px">
+      <button class="ability-roll-btn" id="roll-initiative-btn" title="Roll 1d10 + AGI + Bonus">🎲</button>
     </span>`;
-  wrap.appendChild(initRollEl);
-
-  document.getElementById('roll-initiative-btn').addEventListener('click', () => {
+  initEl.querySelector('input').addEventListener('change', e => {
+    getChar().initiative_bonus = parseInt(e.target.value) || 0;
+    scheduleSave();
+  });
+  initEl.querySelector('#roll-initiative-btn').addEventListener('click', () => {
     const agi = getChar().core_stats.agility ?? 0;
     const bonus = getChar().initiative_bonus ?? 0;
     const mod = agi + bonus;
     const formula = mod >= 0 ? `1d10 + ${mod}` : `1d10 - ${Math.abs(mod)}`;
     window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName: getChar()?.name || 'Character' });
   });
+  wrap.appendChild(initEl);
 }
 
 function renderAttacksTable(char) {

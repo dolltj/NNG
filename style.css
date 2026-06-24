@@ -744,10 +744,11 @@ textarea.field-input {
 
 .resource-bar-wrap {
   margin-top: var(--space-sm);
-  height: 4px;
+  height: 6px;
   background: var(--bg-surface);
   border-radius: var(--radius-full);
   overflow: hidden;
+  cursor: pointer;
 }
 
 .resource-bar-fill {
@@ -813,13 +814,49 @@ textarea.field-input {
 
 .combat-stat-chip-value input:focus { outline: none; }
 
+.combat-stat-chip-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 /* =============================================
    SKILLS LIST
    ============================================= */
 .skills-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm) var(--space-lg);
+}
+
+@media (max-width: 600px) {
+  .skills-columns { grid-template-columns: 1fr; }
+}
+
+.skills-column {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.skills-header-row {
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.skills-header-row:hover { background: none; }
+
+.skill-col-label {
+  flex: none;
+  text-align: center;
+  font-weight: 600;
+  color: inherit;
+  font-size: inherit;
+  font-family: var(--font-body);
 }
 
 .skill-row {
