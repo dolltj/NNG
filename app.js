@@ -106,6 +106,7 @@ function buildDefaultCharacter(id) {
     resources,
     armor: { head: 0, body: 0 },
     speed: 30,
+    initiative_bonus: 0,
     skills,
     perks:        [],
     origin_perk:  { name: '', description: '' },
@@ -661,9 +662,10 @@ function buildCombatStatsRow(char) {
   wrap.innerHTML = '';
 
   const chips = [
-    { label: 'Head Armor', value: char.armor.head, field: 'head' },
-    { label: 'Body Armor', value: char.armor.body, field: 'body' },
-    { label: 'Speed',      value: char.speed,       field: 'speed' }
+    { label: 'Head Armor',       value: char.armor.head,      field: 'head' },
+    { label: 'Body Armor',       value: char.armor.body,      field: 'body' },
+    { label: 'Speed',            value: char.speed,           field: 'speed' },
+    { label: 'Initiative Bonus', value: char.initiative_bonus, field: 'initiative_bonus' }
   ];
 
   chips.forEach(chip => {
@@ -677,24 +679,27 @@ function buildCombatStatsRow(char) {
     el.querySelector('input').addEventListener('change', e => {
       const v = parseInt(e.target.value) || 0;
       if (chip.field === 'speed') getChar().speed = v;
+      else if (chip.field === 'initiative_bonus') getChar().initiative_bonus = v;
       else getChar().armor[chip.field] = v;
       scheduleSave();
     });
     wrap.appendChild(el);
   });
 
-  const initEl = document.createElement('div');
-  initEl.className = 'combat-stat-chip';
-  initEl.innerHTML = `
-    <span class="combat-stat-chip-label">Initiative</span>
+  const initRollEl = document.createElement('div');
+  initRollEl.className = 'combat-stat-chip';
+  initRollEl.innerHTML = `
+    <span class="combat-stat-chip-label">Roll Initiative</span>
     <span class="combat-stat-chip-value">
       <button class="ability-roll-btn" id="roll-initiative-btn">🎲 Roll</button>
     </span>`;
-  wrap.appendChild(initEl);
+  wrap.appendChild(initRollEl);
 
   document.getElementById('roll-initiative-btn').addEventListener('click', () => {
     const agi = getChar().core_stats.agility ?? 0;
-    const formula = buildTestFormula(agi);
+    const bonus = getChar().initiative_bonus ?? 0;
+    const mod = agi + bonus;
+    const formula = mod >= 0 ? `1d10 + ${mod}` : `1d10 - ${Math.abs(mod)}`;
     window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName: getChar()?.name || 'Character' });
   });
 }
