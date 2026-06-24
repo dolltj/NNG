@@ -11,7 +11,6 @@ let CONFIG       = null;   // loaded from nng.json
 let CHARACTERS   = {};     // { [id]: characterObject }
 let ACTIVE_ID    = null;   // currently open character id
 let SAVE_TIMER   = null;   // debounce handle for autosave
-let ACTIVE_ROLL  = null;   // current roll result for the overlay
 
 const STORAGE_CHARS_KEY  = 'ttrpg_characters';
 const STORAGE_ACTIVE_KEY = 'ttrpg_active_id';
@@ -202,7 +201,6 @@ function renderSheet() {
   renderTabPsycasts(char);
   renderTabEquipment(char);
   renderTabNotes(char);
-  renderDiceOverlay();
 }
 
 // -----------------------------------------------
@@ -516,8 +514,7 @@ function buildAbilityCard(statDef, char) {
   card.querySelector('.ability-roll-btn').addEventListener('click', () => {
     const curVal = getChar().core_stats[statDef.id] ?? 0;
     const formula = buildTestFormula(curVal);
-    const result  = evaluateDiceExpression(formula);
-    showRollModal({ label: `${statDef.label} Test`, type: 'ability', formula, ...result });
+    window.Roll20Bridge.sendToRoll20({ label: `${statDef.label} Test`, formula, characterName: getChar()?.name || 'Character' });
   });
 
   return card;
@@ -554,8 +551,7 @@ function buildSkillRow(skillDef, char) {
     const s = getChar().skills[skillDef.id];
     const total2 = (s.origin || 0) + (s.rank || 0);
     const formula = buildTestFormula(total2);
-    const result  = evaluateDiceExpression(formula);
-    showRollModal({ label: skillDef.label, type: 'skill', formula, ...result });
+    window.Roll20Bridge.sendToRoll20({ label: skillDef.label, formula, characterName: getChar()?.name || 'Character' });
   });
 
   return row;
@@ -682,8 +678,7 @@ function buildCombatStatsRow(char) {
   document.getElementById('roll-initiative-btn').addEventListener('click', () => {
     const agi = getChar().core_stats.agility ?? 0;
     const formula = buildTestFormula(agi);
-    const result  = evaluateDiceExpression(formula);
-    showRollModal({ label: 'Initiative', type: 'initiative', formula, ...result });
+    window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName: getChar()?.name || 'Character' });
   });
 }
 
@@ -721,13 +716,11 @@ function renderAttacksTable(char) {
     tr.querySelector('.attack-roll-btn').addEventListener('click', () => {
       const total = getSkillTotal(weapon.skill_id, getChar());
       const formula = buildTestFormula(total);
-      const result  = evaluateDiceExpression(formula);
-      showRollModal({ label: `${weapon.label} — Attack`, type: 'attack', formula, ...result });
+      window.Roll20Bridge.sendToRoll20({ label: `${weapon.label} — Attack`, formula, characterName: getChar()?.name || 'Character' });
     });
 
     tr.querySelector('.damage-roll-btn').addEventListener('click', () => {
-      const result = evaluateDiceExpression(weapon.damage);
-      showRollModal({ label: `${weapon.label} — Damage`, type: 'damage', formula: weapon.damage, ...result });
+      window.Roll20Bridge.sendToRoll20({ label: `${weapon.label} — Damage`, formula: weapon.damage, characterName: getChar()?.name || 'Character' });
     });
 
     const ammoInput = tr.querySelector('[data-ammo-current]');
@@ -811,85 +804,6 @@ function renderTabNotes(char) {
     getChar().notes = e.target.value;
     scheduleSave();
   });
-}
-
-// -----------------------------------------------
-// DICE ROLL MODAL
-// -----------------------------------------------
-function renderDiceOverlay() {
-  if (document.getElementById('roll-overlay')) return;
-  const overlay = document.createElement('div');
-  overlay.id = 'roll-overlay';
-  overlay.innerHTML = `
-    <div class="roll-modal" id="roll-modal">
-      <div class="roll-label" id="roll-label">Roll</div>
-      <div class="roll-formula" id="roll-formula"></div>
-      <div class="roll-dice-display" id="roll-dice-display"></div>
-      <div class="roll-total" id="roll-total">0</div>
-      <div class="roll-crit-label" id="roll-crit-label"></div>
-      <div class="roll-breakdown" id="roll-breakdown"></div>
-      <div class="roll-actions">
-        <button class="roll-close-btn" id="roll-close-btn">Close</button>
-        <button class="roll-send-btn" id="roll-send-btn">🎲 Send to Roll20</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  overlay.addEventListener('click', e => { if (e.target === overlay) closeRollModal(); });
-  document.getElementById('roll-close-btn').addEventListener('click', closeRollModal);
-  document.getElementById('roll-send-btn').addEventListener('click', () => {
-    if (ACTIVE_ROLL && window.Roll20Bridge) {
-      window.Roll20Bridge.sendToRoll20({
-        ...ACTIVE_ROLL,
-        characterName: getChar()?.name || 'Character'
-      });
-    }
-  });
-}
-
-function showRollModal(rollData) {
-  ACTIVE_ROLL = rollData;
-  const overlay = document.getElementById('roll-overlay');
-
-  document.getElementById('roll-label').textContent     = rollData.label || 'Roll';
-  document.getElementById('roll-formula').textContent    = rollData.formula || '';
-  document.getElementById('roll-total').textContent      = rollData.total;
-  document.getElementById('roll-breakdown').textContent  = rollData.breakdown || '';
-  document.getElementById('roll-crit-label').textContent = '';
-
-  const diceDisplay = document.getElementById('roll-dice-display');
-  diceDisplay.innerHTML = '';
-  (rollData.rolls || []).forEach(r => {
-    if (r.results.length === 0) {
-      const chip = document.createElement('div');
-      chip.className = 'die-result';
-      chip.style.fontSize = '1rem';
-      chip.textContent = r.subtotal >= 0 ? `+${r.subtotal}` : r.subtotal;
-      diceDisplay.appendChild(chip);
-    } else {
-      r.results.forEach(val => {
-        const chip = document.createElement('div');
-        chip.className = 'die-result';
-        chip.textContent = val;
-        diceDisplay.appendChild(chip);
-      });
-    }
-  });
-
-  overlay.classList.add('visible');
-  document.addEventListener('keydown', onRollOverlayKey);
-}
-
-function closeRollModal() {
-  const overlay = document.getElementById('roll-overlay');
-  if (overlay) overlay.classList.remove('visible');
-  document.removeEventListener('keydown', onRollOverlayKey);
-  ACTIVE_ROLL = null;
-}
-
-function onRollOverlayKey(e) {
-  if (e.key === 'Escape') closeRollModal();
 }
 
 // -----------------------------------------------
