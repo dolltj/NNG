@@ -328,7 +328,7 @@ function renderTabAbilities(char) {
   panel.appendChild(resGrid);
 
   // --- Derived stats (read-only) ---
-  addSectionHeader('Derived', 'mt-md');
+  addSectionHeader('Recovery', 'mt-md');
   const derivedRow = document.createElement('div');
   derivedRow.className = 'combat-stats-row';
   derivedRow.innerHTML = `
@@ -518,16 +518,33 @@ function buildAbilityCard(statDef, char) {
 
   card.innerHTML = `
     <span class="ability-abbr">${statDef.abbr}</span>
-    <input class="ability-score-input" type="number" min="0" max="6"
-           value="${val}" data-stat="${statDef.id}" id="stat-input-${statDef.id}">
+    <div class="ability-score-controls">
+      <button class="resource-btn" data-stat-delta="-1">−</button>
+      <input class="ability-score-input" type="number" min="0" max="6"
+             value="${val}" data-stat="${statDef.id}" id="stat-input-${statDef.id}">
+      <button class="resource-btn" data-stat-delta="1">＋</button>
+    </div>
     <button class="ability-roll-btn" data-roll-stat="${statDef.id}">🎲 Test</button>
   `;
 
-  card.querySelector('.ability-score-input').addEventListener('change', e => {
-    const newVal = Math.max(0, Math.min(6, parseInt(e.target.value) || 0));
+  const input = card.querySelector('.ability-score-input');
+
+  function setVal(newVal) {
+    newVal = Math.max(0, Math.min(6, newVal));
     getChar().core_stats[statDef.id] = newVal;
     recalcDerivedStats();
     scheduleSave();
+  }
+
+  input.addEventListener('change', e => {
+    setVal(parseInt(e.target.value) || 0);
+  });
+
+  card.querySelectorAll('[data-stat-delta]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      setVal((getChar().core_stats[statDef.id] ?? 0) + parseInt(btn.dataset.statDelta));
+    });
   });
 
   card.querySelector('.ability-roll-btn').addEventListener('click', () => {
@@ -545,8 +562,8 @@ function buildSkillsHeaderRow() {
   row.innerHTML = `
     <button class="skill-roll-btn" style="visibility:hidden" tabindex="-1">🎲</button>
     <span class="skill-name">Skill</span>
-    <span class="skill-col-label" style="width:40px">Bonus</span>
-    <span class="skill-col-label" style="width:40px">Rank</span>
+    <span class="skill-col-label" style="width:44px">Bonus</span>
+    <span class="skill-col-label" style="width:44px">Rank</span>
     <span class="skill-bonus skill-col-label">Total</span>
   `;
   return row;
@@ -561,8 +578,8 @@ function buildSkillRow(skillDef, char) {
   row.innerHTML = `
     <button class="skill-roll-btn" data-roll-skill="${skillDef.id}" title="Roll ${skillDef.label}">🎲</button>
     <span class="skill-name">${skillDef.label}</span>
-    <input class="currency-input" style="width:40px" type="number" min="0" value="${skillData.bonus || 0}" data-skill-bonus="${skillDef.id}">
-    <input class="currency-input" style="width:40px" type="number" min="0" max="12" value="${skillData.rank || 0}" data-skill-rank="${skillDef.id}">
+    <input class="currency-input" style="width:44px" type="number" min="0" value="${skillData.bonus || 0}" data-skill-bonus="${skillDef.id}">
+    <input class="currency-input" style="width:44px" type="number" min="0" max="12" value="${skillData.rank || 0}" data-skill-rank="${skillDef.id}">
     <span class="skill-bonus" id="skill-total-${skillDef.id}">${total}</span>
   `;
 

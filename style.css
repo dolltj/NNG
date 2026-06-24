@@ -118,6 +118,18 @@ body {
   overflow-x: hidden;
 }
 
+/* Remove native up/down spinners from all number inputs */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* Subtle background texture */
 body::before {
   content: '';
@@ -531,16 +543,12 @@ textarea.field-input {
    ============================================= */
 .ability-scores-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-sm);
   margin-bottom: var(--space-lg);
 }
 
-@media (max-width: 700px) {
-  .ability-scores-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (max-width: 400px) {
+@media (max-width: 500px) {
   .ability-scores-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -589,11 +597,17 @@ textarea.field-input {
   color: var(--text-muted);
 }
 
+.ability-score-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
 .ability-score-input {
   background: var(--bg-surface);
   border: 1px solid var(--border-mid);
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  color: #ffffff;
   font-size: 1.4rem;
   font-weight: 700;
   text-align: center;
@@ -802,14 +816,16 @@ textarea.field-input {
 }
 
 .combat-stat-chip-value input {
-  background: none;
-  border: none;
-  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  color: #ffffff;
   font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 700;
   text-align: center;
   width: 48px;
+  padding: 2px;
 }
 
 .combat-stat-chip-value input:focus { outline: none; }
@@ -862,7 +878,7 @@ textarea.field-input {
 .skill-row {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-md);
   padding: 6px var(--space-sm);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -1079,17 +1095,19 @@ tr:hover .delete-attack-btn { opacity: 1; }
 .delete-item-btn:hover { color: var(--color-hp); }
 
 .currency-input {
-  background: none;
-  border: none;
-  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  color: #ffffff;
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
   text-align: center;
   width: 56px;
+  padding: 3px 2px;
 }
 
-.currency-input:focus { outline: none; }
+.currency-input:focus { outline: none; border-color: var(--gold); }
 
 /* =============================================
    NOTES TAB
@@ -1289,5 +1307,4 @@ tr:hover .delete-attack-btn { opacity: 1; }
 
 @media (max-width: 480px) {
   .tab-btn { font-size: 0.68rem; padding: var(--space-sm); }
-  .ability-scores-grid { grid-template-columns: repeat(3, 1fr); }
 }
