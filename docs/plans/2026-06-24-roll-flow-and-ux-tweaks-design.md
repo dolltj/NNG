@@ -22,9 +22,15 @@ Removed from `app.js`: `showRollModal`, `renderDiceOverlay`, `closeRollModal`, `
 
 ## 4. Modifiable Initiative
 
-New character field `char.initiative`, defaulted to the character's AGI value at creation time (`buildDefaultCharacter`). Rendered as a 4th editable flat-number chip in Combat (alongside Head Armor/Body Armor/Speed, same markup pattern). The Initiative roll button uses `buildTestFormula(char.initiative)` instead of reading `core_stats.agility` directly.
+**Amended:** Initiative rolls `1d10 + AGI + Bonus` — a deliberate exception to the system's usual 2d10 mechanic. AGI is read live from `core_stats.agility` (not snapshotted). A new independent field `char.initiative_bonus` (default `0`) is added as a 4th editable flat-number chip in Combat (alongside Head Armor/Body Armor/Speed, same markup pattern), stacking on top of AGI rather than replacing it. The "Roll Initiative" button computes `agi + bonus`, builds a `1d10 ± N` formula inline (not via the shared `buildTestFormula`, which is hardcoded to `2d10` and used everywhere else — this keeps the one-off die size from leaking into the rest of the system), and sends it to Roll20.
 
-Note: since the field is seeded from AGI only at character-creation time, changing AGI later does NOT retroactively change `char.initiative` — it's an independent, player-editable value from that point on, consistent with "modifiable."
+## Amendment: Skills "Origin" → "Bonus"
+
+Per-skill stored field renames from `{origin, rank}` to `{bonus, rank}` throughout (`buildDefaultCharacter`, `buildSkillRow`, `getSkillTotal`). The Skills table header label changes from "Origin" to "Bonus". `Total = Bonus + Rank` — formula unchanged, just relabeled/renamed for clarity. Unrelated to the separate Character-tab `char.origin` (background) field — no naming collision in practice since they live in different parts of the data model, but the rename removes the only place "origin" meant two different things in this codebase.
+
+## Amendment: Core stats scale 0-6
+
+STR/AGI/FOR/WIL move from a 0-20 range to 0-6 (input `min`/`max` and the change-handler clamp in `buildAbilityCard`). `config/nng.json`'s `core_stats[].default` changes from `5` to `3`. This only affects the 4 core stats — Skill Rank stays 0-12, unrelated. HP/Injury Threshold/Recovery Rate formulas are unchanged; they'll simply produce smaller numbers given the narrower stat range, which is the intended effect of the scale change.
 
 ## 5. Slot-based Carrying Capacity
 

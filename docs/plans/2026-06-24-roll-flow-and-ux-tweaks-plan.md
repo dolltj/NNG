@@ -234,12 +234,12 @@ git commit -m "fix: align skill table header with single-column skill rows"
 
 ---
 
-### Task 4: Modifiable Initiative
+### Task 4: Modifiable Initiative — `1d10 + AGI + Bonus`
 
 **Files:**
 - Modify: `app.js` (`buildDefaultCharacter`, `buildCombatStatsRow`)
 
-**Step 1: Add `initiative` to the default character shape**
+**Step 1: Add `initiative_bonus` to the default character shape**
 
 In `buildDefaultCharacter` (currently lines 89-120), the returned object currently has:
 ```js
@@ -250,9 +250,9 @@ Change to:
 ```js
     armor: { head: 0, body: 0 },
     speed: 30,
-    initiative: stats.agility ?? 0,
+    initiative_bonus: 0,
 ```
-(`stats` is the locally-built `core_stats` object already computed earlier in this same function — `stats.agility` is its AGI default from config. This seeds Initiative from AGI only at character-creation time; it's independently editable from then on, per the design.)
+This is an independent flat bonus, NOT seeded from AGI — Initiative rolls `1d10 + AGI(live) + initiative_bonus`, so AGI is read fresh from `core_stats` every roll and this field just adds on top.
 
 **Step 2: Replace the Initiative chip in `buildCombatStatsRow`**
 
@@ -263,10 +263,10 @@ function buildCombatStatsRow(char) {
   wrap.innerHTML = '';
 
   const chips = [
-    { label: 'Head Armor', value: char.armor.head, field: 'head' },
-    { label: 'Body Armor', value: char.armor.body, field: 'body' },
-    { label: 'Speed',      value: char.speed,       field: 'speed' },
-    { label: 'Initiative', value: char.initiative,  field: 'initiative' }
+    { label: 'Head Armor',       value: char.armor.head,      field: 'head' },
+    { label: 'Body Armor',       value: char.armor.body,      field: 'body' },
+    { label: 'Speed',            value: char.speed,           field: 'speed' },
+    { label: 'Initiative Bonus', value: char.initiative_bonus, field: 'initiative_bonus' }
   ];
 
   chips.forEach(chip => {
@@ -280,7 +280,7 @@ function buildCombatStatsRow(char) {
     el.querySelector('input').addEventListener('change', e => {
       const v = parseInt(e.target.value) || 0;
       if (chip.field === 'speed') getChar().speed = v;
-      else if (chip.field === 'initiative') getChar().initiative = v;
+      else if (chip.field === 'initiative_bonus') getChar().initiative_bonus = v;
       else getChar().armor[chip.field] = v;
       scheduleSave();
     });
@@ -297,21 +297,25 @@ function buildCombatStatsRow(char) {
   wrap.appendChild(initRollEl);
 
   document.getElementById('roll-initiative-btn').addEventListener('click', () => {
-    const formula = buildTestFormula(getChar().initiative ?? 0);
+    const agi = getChar().core_stats.agility ?? 0;
+    const bonus = getChar().initiative_bonus ?? 0;
+    const mod = agi + bonus;
+    const formula = mod >= 0 ? `1d10 + ${mod}` : `1d10 - ${Math.abs(mod)}`;
     window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName: getChar()?.name || 'Character' });
   });
 }
 ```
 
-This adds Initiative as a 4th editable flat-number chip (same pattern as Head/Body Armor/Speed) and keeps a separate "Roll Initiative" button/chip that rolls `2d10 + char.initiative` and sends it directly to Roll20 (no local modal, consistent with Task 1).
+Note this builds the `1d10 ± N` formula inline rather than via `buildTestFormula` (which is hardcoded to `2d10` and used by every other roll in the app) — deliberately keeping this one-off die size from leaking into the shared helper.
 
 **Step 3: Verify**
 
 Build a throwaway DOM-shim script (same pattern as Task 2) that:
-- Creates a default character via `buildDefaultCharacter`, confirms `char.initiative === char.core_stats.agility` at creation.
-- Renders the Combat tab, confirms 4 editable chips exist (Head Armor, Body Armor, Speed, Initiative) plus the separate "Roll Initiative" button chip.
-- Dispatches a `change` event on the Initiative input with a new value (e.g. `7`), confirms `char.initiative` updates to `7` and `char.core_stats.agility` is unaffected (independent field, not retroactively linked).
-- Stubs `window.Roll20Bridge.sendToRoll20` and clicks "Roll Initiative", confirms it was called with `formula: buildTestFormula(7)` (i.e. `"2d10 + 7"`) and the correct character name — not reading `core_stats.agility` anymore.
+- Creates a default character via `buildDefaultCharacter`, confirms `char.initiative_bonus === 0` at creation (not seeded from AGI).
+- Renders the Combat tab, confirms 4 editable chips exist (Head Armor, Body Armor, Speed, Initiative Bonus) plus the separate "Roll Initiative" button chip.
+- Dispatches a `change` event on the Initiative Bonus input with a new value (e.g. `2`), confirms `char.initiative_bonus` updates to `2`.
+- Sets `char.core_stats.agility` to a known value (e.g. `4`) directly, stubs `window.Roll20Bridge.sendToRoll20`, clicks "Roll Initiative", confirms it was called with `formula: '1d10 + 6'` (4 + 2) and the correct character name.
+- Changes `core_stats.agility` again (e.g. to `5`) without touching `initiative_bonus`, clicks "Roll Initiative" again, confirms the formula updates to `'1d10 + 7'` — proving AGI is read live, not snapshotted.
 
 Delete the script when done.
 
@@ -319,7 +323,7 @@ Delete the script when done.
 
 ```bash
 git add app.js
-git commit -m "feat: make Initiative an editable, independently rollable stat"
+git commit -m "feat: roll Initiative as 1d10 + AGI + editable Bonus"
 ```
 
 ---
@@ -382,7 +386,182 @@ git commit -m "feat: switch Carrying Capacity from weight to slot count"
 
 ---
 
-### Task 6: Final verification and push
+### Task 6: Rename skill "Origin" to "Bonus"
+
+**Files:**
+- Modify: `app.js` (`buildDefaultCharacter`, `buildSkillRow`, `getSkillTotal`, the skills header in `renderTabAbilities`)
+
+**Step 1: Rename the stored field in the default character shape**
+
+In `buildDefaultCharacter` (currently around line 99), find:
+```js
+  const skills = {};
+  CONFIG.skills.forEach(s => { skills[s.id] = { origin: 0, rank: 0 }; });
+```
+Change to:
+```js
+  const skills = {};
+  CONFIG.skills.forEach(s => { skills[s.id] = { bonus: 0, rank: 0 }; });
+```
+
+**Step 2: Rename the header label**
+
+In `renderTabAbilities` (currently line 353), find:
+```js
+  skillsHeader.innerHTML = `<span></span><span>Skill</span><span>Origin</span><span>Rank</span><span>Total</span>`;
+```
+Change to:
+```js
+  skillsHeader.innerHTML = `<span></span><span>Skill</span><span>Bonus</span><span>Rank</span><span>Total</span>`;
+```
+
+**Step 3: Rename the field throughout `buildSkillRow`**
+
+In `buildSkillRow` (currently lines 526-562), replace the whole function with:
+```js
+function buildSkillRow(skillDef, char) {
+  const row = document.createElement('div');
+  row.className = 'skill-row';
+  const skillData = char.skills[skillDef.id] || { bonus: 0, rank: 0 };
+  const total = (skillData.bonus || 0) + (skillData.rank || 0);
+
+  row.innerHTML = `
+    <button class="skill-roll-btn" data-roll-skill="${skillDef.id}" title="Roll ${skillDef.label}">🎲</button>
+    <span class="skill-name">${skillDef.label}</span>
+    <input class="currency-input" style="width:40px" type="number" min="0" value="${skillData.bonus || 0}" data-skill-bonus="${skillDef.id}">
+    <input class="currency-input" style="width:40px" type="number" min="0" max="12" value="${skillData.rank || 0}" data-skill-rank="${skillDef.id}">
+    <span class="skill-bonus" id="skill-total-${skillDef.id}">${total}</span>
+  `;
+
+  row.querySelector('[data-skill-bonus]').addEventListener('change', e => {
+    getChar().skills[skillDef.id].bonus = parseInt(e.target.value) || 0;
+    refreshSkillTotal(skillDef.id);
+    scheduleSave();
+  });
+  row.querySelector('[data-skill-rank]').addEventListener('change', e => {
+    const v = Math.max(0, Math.min(12, parseInt(e.target.value) || 0));
+    e.target.value = v;
+    getChar().skills[skillDef.id].rank = v;
+    refreshSkillTotal(skillDef.id);
+    scheduleSave();
+  });
+
+  row.querySelector('[data-roll-skill]').addEventListener('click', () => {
+    const s = getChar().skills[skillDef.id];
+    const total2 = (s.bonus || 0) + (s.rank || 0);
+    const formula = buildTestFormula(total2);
+    window.Roll20Bridge.sendToRoll20({ label: skillDef.label, formula, characterName: getChar()?.name || 'Character' });
+  });
+
+  return row;
+}
+```
+(Note: this also already reflects Task 1's "send directly" change to the roll handler — if Task 1 was completed first, just apply the `bonus` rename on top of what's already there instead of reintroducing the old `showRollModal` call.)
+
+**Step 4: Rename the field in `getSkillTotal`**
+
+Currently:
+```js
+function getSkillTotal(skillId, char) {
+  const s = char.skills[skillId] || { origin: 0, rank: 0 };
+  return (s.origin || 0) + (s.rank || 0);
+}
+```
+Change to:
+```js
+function getSkillTotal(skillId, char) {
+  const s = char.skills[skillId] || { bonus: 0, rank: 0 };
+  return (s.bonus || 0) + (s.rank || 0);
+}
+```
+
+**Step 5: Verify**
+
+Build a throwaway DOM-shim script that:
+- Creates a default character, confirms `char.skills[<id>].bonus === 0` exists and `.origin` does not.
+- Renders a skill row, confirms the header reads "Bonus" not "Origin", and the row's bonus input has `data-skill-bonus` (not `data-skill-origin`).
+- Dispatches a `change` on the bonus input with value `3` and the rank input with value `2`, confirms `getSkillTotal` and the displayed `#skill-total-<id>` both read `5`.
+
+Delete the script when done.
+
+**Step 6: Commit**
+
+```bash
+git add app.js
+git commit -m "refactor: rename skill Origin field to Bonus"
+```
+
+---
+
+### Task 7: Core stats scale 0-6 (default 3)
+
+**Files:**
+- Modify: `config/nng.json` (`core_stats[].default`)
+- Modify: `app.js` (`buildAbilityCard`)
+
+**Step 1: Update the config defaults**
+
+In `config/nng.json`, find each of the four `core_stats` entries (strength, agility, fortitude, willpower) and change `"default": 5` to `"default": 3` for all four. Leave every other field (`id`, `label`, `abbr`) untouched.
+
+**Step 2: Update the input range in `buildAbilityCard`**
+
+In `buildAbilityCard` (currently lines 495-524), find:
+```js
+  card.innerHTML = `
+    <span class="ability-abbr">${statDef.abbr}</span>
+    <input class="ability-score-input" type="number" min="0" max="20"
+           value="${val}" data-stat="${statDef.id}" id="stat-input-${statDef.id}">
+    <button class="ability-roll-btn" data-roll-stat="${statDef.id}">🎲 Test</button>
+  `;
+
+  card.querySelector('.ability-score-input').addEventListener('change', e => {
+    const newVal = Math.max(0, Math.min(20, parseInt(e.target.value) || 0));
+    getChar().core_stats[statDef.id] = newVal;
+    recalcDerivedStats();
+    scheduleSave();
+  });
+```
+Change `max="20"` to `max="6"` in the markup, and `Math.min(20, ...)` to `Math.min(6, ...)` in the handler:
+```js
+  card.innerHTML = `
+    <span class="ability-abbr">${statDef.abbr}</span>
+    <input class="ability-score-input" type="number" min="0" max="6"
+           value="${val}" data-stat="${statDef.id}" id="stat-input-${statDef.id}">
+    <button class="ability-roll-btn" data-roll-stat="${statDef.id}">🎲 Test</button>
+  `;
+
+  card.querySelector('.ability-score-input').addEventListener('change', e => {
+    const newVal = Math.max(0, Math.min(6, parseInt(e.target.value) || 0));
+    getChar().core_stats[statDef.id] = newVal;
+    recalcDerivedStats();
+    scheduleSave();
+  });
+```
+
+**Step 3: Verify**
+
+```bash
+node -e "const c = JSON.parse(require('fs').readFileSync('config/nng.json','utf8')); c.core_stats.forEach(s => { if (s.default !== 3) throw new Error(s.id + ' default is ' + s.default + ', expected 3'); }); console.log('all core_stats default to 3')"
+```
+
+Build a throwaway DOM-shim script that:
+- Creates a default character, confirms `char.core_stats.strength === 3` (and the other 3 stats).
+- Renders an ability card, confirms the input's `max` attribute is `"6"`.
+- Dispatches a `change` event with value `9` (above the new max), confirms it clamps to `6`, not `9` or `20`.
+- Confirms Skill Rank inputs are unaffected — still clamp to `12`, not `6` (Task 6's `buildSkillRow` rank handler untouched by this task).
+
+Delete the script when done.
+
+**Step 4: Commit**
+
+```bash
+git add config/nng.json app.js
+git commit -m "feat: rescale core stats from 0-20 to 0-6, default 3"
+```
+
+---
+
+### Task 8: Final verification and push
 
 **Step 1: Full syntax/sanity check**
 
@@ -396,13 +575,15 @@ All should pass with no errors.
 
 **Step 2: Cross-task grep sweep**
 
-Confirm no stale references survived across all 5 tasks:
+Confirm no stale references survived across all 7 prior tasks:
 ```bash
 grep -n "showRollModal\|renderDiceOverlay\|closeRollModal\|onRollOverlayKey\|ACTIVE_ROLL" app.js
 grep -n "roll-overlay\|roll-modal\|die-result" style.css
 grep -n "\.weight\b" app.js
+grep -n "skills\[.*\]\.origin\|data-skill-origin\|{ origin: 0, rank: 0 }" app.js
+grep -n 'max="20"\|Math\.min(20' app.js
 ```
-First two should return zero matches. The third should return zero matches in `app.js` (the `buildTextEntryList` shared helper still has weight-handling code paths for the `secondFieldType === 'number'` branch — that's fine, it's generic shared infrastructure not equipment-specific; just confirm `renderTabEquipment` itself doesn't reference `.weight` anymore).
+First two should return zero matches. The third should return zero matches in `app.js` (the `buildTextEntryList` shared helper still has weight-handling code paths for the `secondFieldType === 'number'` branch — that's fine, it's generic shared infrastructure not equipment-specific; just confirm `renderTabEquipment` itself doesn't reference `.weight` anymore). The fourth and fifth should also return zero matches — confirming the skill-field rename and the 0-20→0-6 stat rescale didn't leave any old references behind.
 
 **Step 3: Push**
 
