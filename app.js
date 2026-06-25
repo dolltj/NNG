@@ -547,10 +547,16 @@ function buildAbilityCard(statDef, char) {
     });
   });
 
-  card.querySelector('.ability-roll-btn').addEventListener('click', () => {
+  card.querySelector('.ability-roll-btn').addEventListener('click', e => {
     const curVal = getChar().core_stats[statDef.id] ?? 0;
+    const label = `${statDef.label} Test`;
+    const characterName = getChar()?.name || 'Character';
+    if (e.shiftKey) {
+      openAdvantageModal({ label, baseDieCount: 2, modifier: curVal, characterName });
+      return;
+    }
     const formula = buildTestFormula(curVal);
-    window.Roll20Bridge.sendToRoll20({ label: `${statDef.label} Test`, formula, characterName: getChar()?.name || 'Character' });
+    window.Roll20Bridge.sendToRoll20({ label, formula, characterName });
   });
 
   return card;
@@ -596,11 +602,16 @@ function buildSkillRow(skillDef, char) {
     scheduleSave();
   });
 
-  row.querySelector('[data-roll-skill]').addEventListener('click', () => {
+  row.querySelector('[data-roll-skill]').addEventListener('click', e => {
     const s = getChar().skills[skillDef.id];
     const total2 = (s.bonus || 0) + (s.rank || 0);
+    const characterName = getChar()?.name || 'Character';
+    if (e.shiftKey) {
+      openAdvantageModal({ label: skillDef.label, baseDieCount: 2, modifier: total2, characterName });
+      return;
+    }
     const formula = buildTestFormula(total2);
-    window.Roll20Bridge.sendToRoll20({ label: skillDef.label, formula, characterName: getChar()?.name || 'Character' });
+    window.Roll20Bridge.sendToRoll20({ label: skillDef.label, formula, characterName });
   });
 
   return row;
@@ -727,12 +738,17 @@ function buildCombatStatsRow(char) {
     getChar().initiative_bonus = parseInt(e.target.value) || 0;
     scheduleSave();
   });
-  initEl.querySelector('#roll-initiative-btn').addEventListener('click', () => {
+  initEl.querySelector('#roll-initiative-btn').addEventListener('click', e => {
     const agi = getChar().core_stats.agility ?? 0;
     const bonus = getChar().initiative_bonus ?? 0;
     const mod = agi + bonus;
+    const characterName = getChar()?.name || 'Character';
+    if (e.shiftKey) {
+      openAdvantageModal({ label: 'Initiative', baseDieCount: 1, modifier: mod, characterName });
+      return;
+    }
     const formula = mod >= 0 ? `1d10 + ${mod}` : `1d10 - ${Math.abs(mod)}`;
-    window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName: getChar()?.name || 'Character' });
+    window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName });
   });
   wrap.appendChild(initEl);
 }
@@ -764,9 +780,15 @@ function renderAttacksTable(char) {
       scheduleSave();
     });
 
-    tr.querySelector('.attack-roll-btn').addEventListener('click', () => {
+    tr.querySelector('.attack-roll-btn').addEventListener('click', e => {
+      const label = `${weapon.label} — Attack`;
+      const characterName = getChar()?.name || 'Character';
+      if (e.shiftKey) {
+        openAdvantageModal({ label, baseDieCount: 2, modifier: weapon.bonus ?? 0, characterName });
+        return;
+      }
       const formula = buildTestFormula(weapon.bonus ?? 0);
-      window.Roll20Bridge.sendToRoll20({ label: `${weapon.label} — Attack`, formula, characterName: getChar()?.name || 'Character' });
+      window.Roll20Bridge.sendToRoll20({ label, formula, characterName });
     });
 
     tr.querySelector('.damage-roll-btn').addEventListener('click', () => {
@@ -854,6 +876,90 @@ function renderTabNotes(char) {
     getChar().notes = e.target.value;
     scheduleSave();
   });
+}
+
+// -----------------------------------------------
+// ADVANTAGE / DISADVANTAGE MODAL
+// Shift-click any roll button to open this instead of
+// sending immediately. Lets the player add Advantage and/or
+// Disadvantage dice before the roll is sent. A plain click
+// still sends immediately with no modal, per the normal flow.
+// -----------------------------------------------
+let PENDING_ADV_ROLL = null;
+let ADV_COUNT = 0;
+let DIS_COUNT = 0;
+
+function openAdvantageModal(rollInfo) {
+  PENDING_ADV_ROLL = rollInfo;
+  ADV_COUNT = 0;
+  DIS_COUNT = 0;
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.id = 'advantage-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal">
+      <div class="modal-title">${escHtml(rollInfo.label)}</div>
+      <div class="advantage-stepper-row">
+        <span class="advantage-stepper-label">Advantage</span>
+        <button class="resource-btn" id="adv-minus-btn">−</button>
+        <span class="advantage-count" id="adv-count-display">0</span>
+        <button class="resource-btn" id="adv-plus-btn">＋</button>
+      </div>
+      <div class="advantage-stepper-row">
+        <span class="advantage-stepper-label">Disadvantage</span>
+        <button class="resource-btn" id="dis-minus-btn">−</button>
+        <span class="advantage-count" id="dis-count-display">0</span>
+        <button class="resource-btn" id="dis-plus-btn">＋</button>
+      </div>
+      <div class="advantage-preview" id="advantage-preview"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="advantage-cancel-btn">Cancel</button>
+        <button class="btn btn-primary" id="advantage-roll-btn">🎲 Roll</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) closeAdvantageModal(); });
+  document.getElementById('advantage-cancel-btn').addEventListener('click', closeAdvantageModal);
+  document.getElementById('advantage-roll-btn').addEventListener('click', confirmAdvantageRoll);
+  document.getElementById('adv-minus-btn').addEventListener('click', () => adjustAdvantageCounts(-1, 0));
+  document.getElementById('adv-plus-btn').addEventListener('click', () => adjustAdvantageCounts(1, 0));
+  document.getElementById('dis-minus-btn').addEventListener('click', () => adjustAdvantageCounts(0, -1));
+  document.getElementById('dis-plus-btn').addEventListener('click', () => adjustAdvantageCounts(0, 1));
+
+  updateAdvantagePreview();
+}
+
+function closeAdvantageModal() {
+  const backdrop = document.getElementById('advantage-backdrop');
+  if (backdrop) backdrop.remove();
+  PENDING_ADV_ROLL = null;
+}
+
+function adjustAdvantageCounts(deltaAdv, deltaDis) {
+  ADV_COUNT = Math.max(0, Math.min(5, ADV_COUNT + deltaAdv));
+  DIS_COUNT = Math.max(0, Math.min(5, DIS_COUNT + deltaDis));
+  updateAdvantagePreview();
+}
+
+function updateAdvantagePreview() {
+  document.getElementById('adv-count-display').textContent = ADV_COUNT;
+  document.getElementById('dis-count-display').textContent = DIS_COUNT;
+  document.getElementById('advantage-preview').textContent =
+    buildAdvantageFormula(PENDING_ADV_ROLL.baseDieCount, PENDING_ADV_ROLL.modifier, ADV_COUNT, DIS_COUNT);
+}
+
+function confirmAdvantageRoll() {
+  if (!PENDING_ADV_ROLL) return;
+  const formula = buildAdvantageFormula(PENDING_ADV_ROLL.baseDieCount, PENDING_ADV_ROLL.modifier, ADV_COUNT, DIS_COUNT);
+  window.Roll20Bridge.sendToRoll20({
+    label: PENDING_ADV_ROLL.label,
+    formula,
+    characterName: PENDING_ADV_ROLL.characterName
+  });
+  closeAdvantageModal();
 }
 
 // -----------------------------------------------

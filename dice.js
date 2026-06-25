@@ -134,6 +134,33 @@ function buildTestFormula(modifier) {
 }
 
 /**
+ * Build a test formula with Advantage/Disadvantage applied.
+ *
+ * Base Test rolls `baseDieCount`d10 and keeps all of them. Each instance
+ * of Advantage or Disadvantage adds one extra d10; Advantage keeps the
+ * highest `baseDieCount` results, Disadvantage keeps the lowest
+ * `baseDieCount` results. Advantage and Disadvantage cancel 1-to-1, so
+ * only their net difference matters. Net zero collapses to the plain
+ * "baseDieCount d10 + modifier" formula (identical to buildTestFormula
+ * for baseDieCount=2).
+ */
+function buildAdvantageFormula(baseDieCount, modifier, advantage = 0, disadvantage = 0) {
+  if (!Number.isFinite(modifier)) throw new TypeError(`buildAdvantageFormula: expected a finite modifier, got ${modifier}`);
+  const net = (advantage || 0) - (disadvantage || 0);
+  let dicePart;
+  if (net === 0) {
+    dicePart = `${baseDieCount}d10`;
+  } else if (net > 0) {
+    dicePart = `${baseDieCount + net}d10kh${baseDieCount}`;
+  } else {
+    dicePart = `${baseDieCount - net}d10kl${baseDieCount}`;
+  }
+  if (modifier > 0) return `${dicePart} + ${modifier}`;
+  if (modifier < 0) return `${dicePart} - ${Math.abs(modifier)}`;
+  return dicePart;
+}
+
+/**
  * Format a modifier as a string: "+3", "−1", "+0"
  */
 function formatMod(mod) {
@@ -146,6 +173,6 @@ if (typeof module !== 'undefined') {
   module.exports = {
     rollDie, parseDiceToken, evaluateDiceExpression,
     deriveMaxHP, deriveInjuryThreshold, deriveRecoveryRate,
-    deriveCarryingCapacity, buildTestFormula, formatMod
+    deriveCarryingCapacity, buildTestFormula, buildAdvantageFormula, formatMod
   };
 }
