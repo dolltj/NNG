@@ -954,8 +954,12 @@ function updateAdvantagePreview() {
 function confirmAdvantageRoll() {
   if (!PENDING_ADV_ROLL) return;
   const formula = buildAdvantageFormula(PENDING_ADV_ROLL.baseDieCount, PENDING_ADV_ROLL.modifier, ADV_COUNT, DIS_COUNT);
+  const net = ADV_COUNT - DIS_COUNT;
+  let label = PENDING_ADV_ROLL.label;
+  if (net > 0) label = `Advantage${net > 1 ? ' x' + net : ''} ${label}`;
+  else if (net < 0) label = `Disadvantage${-net > 1 ? ' x' + -net : ''} ${label}`;
   window.Roll20Bridge.sendToRoll20({
-    label: PENDING_ADV_ROLL.label,
+    label,
     formula,
     characterName: PENDING_ADV_ROLL.characterName
   });
