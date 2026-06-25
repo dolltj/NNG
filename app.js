@@ -100,6 +100,7 @@ function buildDefaultCharacter(id) {
   return {
     id,
     name:        'New Character',
+    player_name: '',
     origin:      '',
     level:       1,
     core_stats:  stats,
@@ -189,6 +190,16 @@ function getChar() {
   return CHARACTERS[ACTIVE_ID];
 }
 
+/**
+ * "Character Name (Player Name)" for Roll20 — omits the
+ * parenthetical entirely when no player name is set.
+ */
+function rollCharacterName(char) {
+  const name = char?.name || 'Character';
+  const player = (char?.player_name || '').trim();
+  return player ? `${name} (${player})` : name;
+}
+
 // -----------------------------------------------
 // RENDER FULL SHEET
 // -----------------------------------------------
@@ -235,6 +246,7 @@ function renderTabInfo(char) {
     <div class="section-header">Identity</div>
     <div class="char-info-grid">
       ${infoField('Character Name', 'name', char.name)}
+      ${infoField('Player Name', 'player_name', char.player_name)}
       ${infoField('Origin', 'origin', char.origin)}
       ${infoNumberField('Level', 'level', char.level, 1, 99)}
     </div>
@@ -550,7 +562,7 @@ function buildAbilityCard(statDef, char) {
   card.querySelector('.ability-roll-btn').addEventListener('click', e => {
     const curVal = getChar().core_stats[statDef.id] ?? 0;
     const label = `${statDef.label} Test`;
-    const characterName = getChar()?.name || 'Character';
+    const characterName = rollCharacterName(getChar());
     if (e.shiftKey) {
       openAdvantageModal({ label, baseDieCount: 2, modifier: curVal, characterName });
       return;
@@ -605,7 +617,7 @@ function buildSkillRow(skillDef, char) {
   row.querySelector('[data-roll-skill]').addEventListener('click', e => {
     const s = getChar().skills[skillDef.id];
     const total2 = (s.bonus || 0) + (s.rank || 0);
-    const characterName = getChar()?.name || 'Character';
+    const characterName = rollCharacterName(getChar());
     if (e.shiftKey) {
       openAdvantageModal({ label: skillDef.label, baseDieCount: 2, modifier: total2, characterName });
       return;
@@ -742,7 +754,7 @@ function buildCombatStatsRow(char) {
     const agi = getChar().core_stats.agility ?? 0;
     const bonus = getChar().initiative_bonus ?? 0;
     const mod = agi + bonus;
-    const characterName = getChar()?.name || 'Character';
+    const characterName = rollCharacterName(getChar());
     if (e.shiftKey) {
       openAdvantageModal({ label: 'Initiative', baseDieCount: 1, modifier: mod, characterName });
       return;
@@ -782,7 +794,7 @@ function renderAttacksTable(char) {
 
     tr.querySelector('.attack-roll-btn').addEventListener('click', e => {
       const label = `${weapon.label} — Attack`;
-      const characterName = getChar()?.name || 'Character';
+      const characterName = rollCharacterName(getChar());
       if (e.shiftKey) {
         openAdvantageModal({ label, baseDieCount: 2, modifier: weapon.bonus ?? 0, characterName });
         return;
@@ -792,7 +804,7 @@ function renderAttacksTable(char) {
     });
 
     tr.querySelector('.damage-roll-btn').addEventListener('click', () => {
-      window.Roll20Bridge.sendToRoll20({ label: `${weapon.label} — Damage`, formula: weapon.damage, characterName: getChar()?.name || 'Character' });
+      window.Roll20Bridge.sendToRoll20({ label: `${weapon.label} — Damage`, formula: weapon.damage, characterName: rollCharacterName(getChar()) });
     });
 
     const ammoInput = tr.querySelector('[data-ammo-current]');
