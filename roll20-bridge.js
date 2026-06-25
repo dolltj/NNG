@@ -11,6 +11,9 @@
   let _beyond20Available = false;
   let _beyond20Checked   = false;
 
+  const ROLL_LOG_MAX = 5;
+  let _rollLog = [];
+
   // -----------------------------------------------
   // Detection: listen for Beyond20's presence signal
   // Beyond20 injects a small script that fires a
@@ -47,12 +50,54 @@
    * }
    */
   function sendToRoll20(rollData) {
+    _logRoll(rollData);
     if (_beyond20Available) {
       _sendViaBeyond20(rollData);
       showRollToast('🎲 Sent to Roll20!', 'success');
     } else {
       _sendViaClipboard(rollData);
     }
+  }
+
+  // -----------------------------------------------
+  // Recent-rolls log
+  // A small persistent panel (separate from the
+  // transient toast) listing the last few rolls sent,
+  // so the player can confirm what fired without
+  // relying on the toast's timing.
+  // -----------------------------------------------
+  function _logRoll(rollData) {
+    _rollLog.unshift({ label: rollData.label || 'Roll', formula: rollData.formula || '' });
+    if (_rollLog.length > ROLL_LOG_MAX) _rollLog.length = ROLL_LOG_MAX;
+    _renderRollLog();
+  }
+
+  function _renderRollLog() {
+    let panel = document.getElementById('roll-log-panel');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'roll-log-panel';
+      document.body.appendChild(panel);
+    }
+
+    panel.innerHTML = `
+      <div class="roll-log-title">Sent Rolls</div>
+      ${_rollLog.map(r => `
+        <div class="roll-log-entry">
+          <span class="roll-log-formula">${_escapeHtml(r.formula)}</span>
+          <span class="roll-log-label">${_escapeHtml(r.label)}</span>
+        </div>
+      `).join('')}
+    `;
+    panel.classList.add('visible');
+  }
+
+  function _escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   // -----------------------------------------------

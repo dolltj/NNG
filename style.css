@@ -1176,6 +1176,71 @@ tr:hover .delete-attack-btn { opacity: 1; }
 .toast.warn    .toast-icon { color: var(--color-hitdie); }
 
 /* =============================================
+   SENT ROLLS LOG
+   ============================================= */
+#roll-log-panel {
+  position: fixed;
+  bottom: var(--space-xl);
+  left: var(--space-xl);
+  z-index: 1900;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  box-shadow: var(--shadow-md);
+  max-width: 240px;
+  font-size: 0.78rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+#roll-log-panel.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.roll-log-title {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.roll-log-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: 2px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.roll-log-entry:first-of-type { border-top: none; }
+
+.roll-log-formula {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.roll-log-label {
+  color: var(--text-secondary);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  #roll-log-panel { bottom: var(--space-md); left: var(--space-md); max-width: 200px; }
+}
+
+/* =============================================
    MODAL (generic)
    ============================================= */
 .modal-backdrop {
