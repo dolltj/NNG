@@ -634,7 +634,7 @@ function renderTabCombat(char) {
       <thead>
         <tr>
           <th>Weapon</th>
-          <th>Skill</th>
+          <th>Bonus</th>
           <th>Attack</th>
           <th>Damage</th>
           <th>Range</th>
@@ -675,7 +675,7 @@ function renderTabCombat(char) {
       label:   name,
       damage:  document.getElementById('atk-damage').value || '1d4',
       range:   document.getElementById('atk-range').value,
-      skill_id: CONFIG.skills[0].id,
+      bonus:   0,
       ammo:    ammoMax > 0 ? { current: ammoMax, max: ammoMax } : null
     });
     scheduleSave();
@@ -747,11 +747,7 @@ function renderAttacksTable(char) {
 
     tr.innerHTML = `
       <td><strong>${escHtml(weapon.label)}</strong></td>
-      <td>
-        <select class="field-input" data-weapon-skill="${weapon.id}" style="font-size:0.8rem">
-          ${CONFIG.skills.map(s => `<option value="${s.id}" ${s.id === weapon.skill_id ? 'selected' : ''}>${s.label}</option>`).join('')}
-        </select>
-      </td>
+      <td><input class="currency-input" style="width:48px" type="number" data-weapon-bonus="${weapon.id}" value="${weapon.bonus ?? 0}"></td>
       <td><button class="attack-roll-btn" data-wpn-id="${weapon.id}">🎲 2d10</button></td>
       <td><button class="damage-roll-btn" data-wpn-id="${weapon.id}">⚔ ${escHtml(weapon.damage)}</button></td>
       <td style="font-size:0.8rem;color:var(--text-muted)">${escHtml(weapon.range || '—')}</td>
@@ -763,14 +759,13 @@ function renderAttacksTable(char) {
       <td><button class="delete-attack-btn" data-wpn-id="${weapon.id}" title="Remove">✕</button></td>
     `;
 
-    tr.querySelector('[data-weapon-skill]').addEventListener('change', e => {
-      weapon.skill_id = e.target.value;
+    tr.querySelector('[data-weapon-bonus]').addEventListener('change', e => {
+      weapon.bonus = parseInt(e.target.value) || 0;
       scheduleSave();
     });
 
     tr.querySelector('.attack-roll-btn').addEventListener('click', () => {
-      const total = getSkillTotal(weapon.skill_id, getChar());
-      const formula = buildTestFormula(total);
+      const formula = buildTestFormula(weapon.bonus ?? 0);
       window.Roll20Bridge.sendToRoll20({ label: `${weapon.label} — Attack`, formula, characterName: getChar()?.name || 'Character' });
     });
 
