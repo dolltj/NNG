@@ -1,0 +1,112 @@
+{
+  "weapons": [
+    {
+      "id": "monodagger",
+      "label": "Monodagger",
+      "category": "Modern Melee Weapon",
+      "tags": ["light", "finesse", "concealable"],
+      "description": "A crystal-metallic dagger infused with mechanites that maintain a mono-molecular cutting edge.",
+      "magazine_size": null,
+      "actions": [
+        { "id": "slash", "label": "Slash", "range": 1, "damage": "3d6" },
+        { "id": "stab", "label": "Stab", "range": 1, "damage": "2d6", "damage_type": "piercing" },
+        { "id": "throw", "label": "Throw", "range": 6, "damage": "2d6" }
+      ]
+    },
+    {
+      "id": "machine_pistol",
+      "label": "Machine Pistol",
+      "category": "Modern Ranged Weapon",
+      "tags": ["light", "concealable"],
+      "description": "A fully automatic handgun designed primarily for close-quarters combat.",
+      "magazine_size": 20,
+      "actions": [
+        { "id": "single_shot", "label": "Single-Shot", "range": 30, "damage": "2d6", "ammo_cost": 1 },
+        { "id": "three_round_burst", "label": "Three-Round Burst", "range": 30, "damage": "2d6", "ammo_cost": 3, "burst_fire": true, "attack_count": 3 },
+        { "id": "full_auto", "label": "Full-Auto", "range": 30, "damage": "2d6", "ammo_cost": 10, "area_of_effect": 3, "save_dv": 11 },
+        { "id": "reload", "label": "Reload", "is_reload": true }
+      ]
+    },
+    {
+      "id": "submachine_gun",
+      "label": "Submachine Gun",
+      "category": "Modern Ranged Weapon",
+      "tags": [],
+      "description": "A compact, lightweight, fully automatic weapon designed to be fired from the shoulder or hip.",
+      "magazine_size": 30,
+      "actions": [
+        { "id": "single_shot", "label": "Single-Shot", "range": 50, "damage": "3d6", "ammo_cost": 1 },
+        { "id": "three_round_burst", "label": "Three-Round Burst", "range": 50, "damage": "3d6", "ammo_cost": 3, "burst_fire": true, "attack_count": 3 },
+        { "id": "full_auto", "label": "Full-Auto", "range": 50, "damage": "3d6", "ammo_cost": 10, "area_of_effect": 3, "save_dv": 13 },
+        { "id": "reload", "label": "Reload", "is_reload": true }
+      ]
+    }
+  ],
+  "attachments": [
+    {
+      "id": "extended_magazine",
+      "label": "Extended Magazine",
+      "category": "Modern Ranged Weapon Attachment",
+      "compatible_weapons": ["machine_pistol", "submachine_gun"],
+      "description": "Increases magazine capacity so the weapon does not run empty in a single, 6-second burst.",
+      "effects": [
+        { "type": "set_magazine_size", "weapon": "machine_pistol", "value": 30 },
+        { "type": "set_magazine_size", "weapon": "submachine_gun", "value": 50 }
+      ]
+    },
+    {
+      "id": "drum_magazine",
+      "label": "Drum Magazine",
+      "category": "Modern Ranged Weapon Attachment",
+      "compatible_weapons": ["machine_pistol", "submachine_gun"],
+      "description": "Useful for maximum capacity if the user is stationary or defending a fixed point, despite the added weight.",
+      "effects": [
+        { "type": "set_magazine_size", "value": 100 },
+        { "type": "remove_tag", "tag": "light" },
+        { "type": "remove_tag", "tag": "concealable" }
+      ]
+    },
+    {
+      "id": "single_point_sling",
+      "label": "Single-Point Sling",
+      "category": "Modern Ranged Weapon Attachment",
+      "compatible_weapons": ["submachine_gun"],
+      "description": "A specialized sling that allows the operator to drop the weapon to transition to a sidearm without losing their primary weapon.",
+      "effects": [],
+      "notes": ["Can drop the weapon for free without losing it."]
+    },
+    {
+      "id": "detachable_shoulder_stock",
+      "label": "Detachable Shoulder Stock",
+      "category": "Modern Ranged Weapon Attachment",
+      "compatible_weapons": ["machine_pistol"],
+      "description": "Transforms the weapon into a steady platform. This is the single most important attachment for controlling full-auto muzzle rise.",
+      "effects": [
+        { "type": "action_save_dv_bonus", "action": "full_auto", "value": 2 },
+        { "type": "remove_tag", "tag": "concealable" }
+      ],
+      "notes": ["Requires the Interact quick action to engage or disengage the shoulder stock."]
+    },
+    {
+      "id": "forward_grip",
+      "label": "Forward Grip",
+      "category": "Modern Ranged Weapon Attachment",
+      "compatible_weapons": ["machine_pistol"],
+      "description": "A secondary grip placed under the barrel to allow a two-handed stance, keeping the muzzle downward during sustained fire.",
+      "effects": [
+        { "type": "add_tag", "tag": "two-handed" },
+        { "type": "remove_burst_disadvantage" }
+      ]
+    },
+    {
+      "id": "mrds",
+      "label": "Micro Red Dot Sight (MRDS)",
+      "category": "Modern Ranged Weapon Attachment",
+      "compatible_weapons": ["machine_pistol", "submachine_gun"],
+      "description": "A lightweight, low-profile optic that allows for rapid target tracking with both eyes open in close-quarters combat.",
+      "effects": [
+        { "type": "action_hit_bonus", "action": "single_shot", "value": 1 }
+      ]
+    }
+  ]
+}

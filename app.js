@@ -7,20 +7,23 @@
 // -----------------------------------------------
 // STATE
 // -----------------------------------------------
-let CONFIG       = null;   // loaded from nng.json
-let CHARACTERS   = {};     // { [id]: characterObject }
-let ACTIVE_ID    = null;   // currently open character id
-let SAVE_TIMER   = null;   // debounce handle for autosave
+let CONFIG        = null;   // loaded from nng.json
+let WEAPON_CONFIG  = null;  // loaded from weapons.json — { weapons: [], attachments: [] }
+let CHARACTERS    = {};     // { [id]: characterObject }
+let ACTIVE_ID     = null;   // currently open character id
+let SAVE_TIMER    = null;   // debounce handle for autosave
 
 const STORAGE_CHARS_KEY  = 'ttrpg_characters';
 const STORAGE_ACTIVE_KEY = 'ttrpg_active_id';
 const CONFIG_URL         = 'config/nng.json';
+const WEAPONS_CONFIG_URL  = 'config/weapons.json';
 
 // -----------------------------------------------
 // BOOTSTRAP
 // -----------------------------------------------
 window.addEventListener('DOMContentLoaded', async () => {
   CONFIG = await loadConfig(CONFIG_URL);
+  WEAPON_CONFIG = await loadConfig(WEAPONS_CONFIG_URL);
   loadAllCharacters();
   renderRoster();
 });
