@@ -4,7 +4,7 @@
     "name": "Adrenaline Rush",
     "level": 1,
     "prerequisite": "Level 1",
-    "effect": "You gain the Adrenaline Rush Action",
+    "effect": "You gain the Adrenaline Rush Action.",
     "action": { "type": "Action", "label": "Adrenaline Rush", "text": "You can place yourself at the top of the Initiative order." }
   },
   {
