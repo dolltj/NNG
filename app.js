@@ -756,11 +756,11 @@ function renderWeaponsList(char) {
   (char.weapons || []).forEach(weaponInst => {
     const resolved = resolveWeapon(weaponInst);
     if (!resolved) return; // orphaned weapon_id with no matching dictionary entry
-    wrap.appendChild(buildWeaponCard(weaponInst, resolved, char));
+    wrap.appendChild(buildWeaponCard(weaponInst, resolved));
   });
 }
 
-function buildWeaponCard(weaponInst, resolved, char) {
+function buildWeaponCard(weaponInst, resolved) {
   const card = document.createElement('div');
   card.className = 'weapon-card';
 
@@ -799,16 +799,16 @@ function buildWeaponCard(weaponInst, resolved, char) {
   const actionsWrap = document.createElement('div');
   actionsWrap.className = 'weapon-action-rows';
   resolved.actions.forEach(action => {
-    actionsWrap.appendChild(buildActionRow(weaponInst, resolved, action, char));
+    actionsWrap.appendChild(buildActionRow(weaponInst, resolved, action));
   });
   card.appendChild(actionsWrap);
 
-  card.appendChild(buildAttachmentsSection(weaponInst, resolved, char));
+  card.appendChild(buildAttachmentsSection(weaponInst, resolved));
 
   return card;
 }
 
-function buildAttachmentsSection(weaponInst, resolved, char) {
+function buildAttachmentsSection(weaponInst, resolved) {
   const section = document.createElement('div');
   section.className = 'weapon-attachments';
 
@@ -872,7 +872,7 @@ function buildAttachmentsSection(weaponInst, resolved, char) {
   return section;
 }
 
-function buildActionRow(weaponInst, resolved, action, char) {
+function buildActionRow(weaponInst, resolved, action) {
   const row = document.createElement('div');
   row.className = 'weapon-action-row';
 
@@ -909,7 +909,7 @@ function buildActionRow(weaponInst, resolved, action, char) {
 
     const modifier = (weaponInst.bonus ?? 0) + (action.hit_bonus || 0);
     const label = `${resolved.label} — ${action.label}`;
-    const characterName = rollCharacterName(char);
+    const characterName = rollCharacterName(getChar());
     const isBurstFire = !!action.burst_fire;
     const burstDisadvantageApplies = isBurstFire && !resolved.burst_disadvantage_removed;
     const attackCount = isBurstFire ? (action.attack_count || 1) : 1;
