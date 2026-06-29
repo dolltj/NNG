@@ -850,16 +850,19 @@ function buildActionRow(weaponInst, resolved, action, char) {
     const modifier = (weaponInst.bonus ?? 0) + (action.hit_bonus || 0);
     const label = `${resolved.label} — ${action.label}`;
     const characterName = rollCharacterName(char);
-    const isBurst = !!action.burst_fire && !resolved.burst_disadvantage_removed;
-    const attackCount = isBurst ? (action.attack_count || 1) : 1;
+    const isBurstFire = !!action.burst_fire;
+    const burstDisadvantageApplies = isBurstFire && !resolved.burst_disadvantage_removed;
+    const attackCount = isBurstFire ? (action.attack_count || 1) : 1;
 
     if (e.shiftKey) {
       openAdvantageModal({
         label, baseDieCount: 2, modifier, characterName,
-        attackCount, presetDisadvantage: isBurst ? 1 : 0
+        attackCount, presetDisadvantage: burstDisadvantageApplies ? 1 : 0
       });
-    } else if (isBurst) {
-      const formula = buildAdvantageFormula(2, modifier, 0, 1);
+    } else if (isBurstFire) {
+      const formula = burstDisadvantageApplies
+        ? buildAdvantageFormula(2, modifier, 0, 1)
+        : buildTestFormula(modifier);
       for (let i = 1; i <= attackCount; i++) {
         window.Roll20Bridge.sendToRoll20({ label: `${label} (${i}/${attackCount})`, formula, characterName });
       }
