@@ -346,7 +346,7 @@ function renderTabInfo(char) {
           document.getElementById('top-bar-title').textContent = val || 'Unnamed';
           renderRoster();
         }
-        if (key === 'level') recalcDerivedStats();
+        if (key === 'level') { recalcDerivedStats(); renderTabInfo(getChar()); }
       }
       scheduleSave();
     });
