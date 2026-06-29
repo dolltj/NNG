@@ -969,7 +969,7 @@ let DIS_COUNT = 0;
 function openAdvantageModal(rollInfo) {
   PENDING_ADV_ROLL = rollInfo;
   ADV_COUNT = 0;
-  DIS_COUNT = 0;
+  DIS_COUNT = rollInfo.presetDisadvantage || 0;
 
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
@@ -1035,11 +1035,15 @@ function confirmAdvantageRoll() {
   let label = PENDING_ADV_ROLL.label;
   if (net > 0) label = `Advantage${net > 1 ? ' x' + net : ''} ${label}`;
   else if (net < 0) label = `Disadvantage${-net > 1 ? ' x' + -net : ''} ${label}`;
-  window.Roll20Bridge.sendToRoll20({
-    label,
-    formula,
-    characterName: PENDING_ADV_ROLL.characterName
-  });
+
+  const n = PENDING_ADV_ROLL.attackCount || 1;
+  for (let i = 1; i <= n; i++) {
+    window.Roll20Bridge.sendToRoll20({
+      label: n > 1 ? `${label} (${i}/${n})` : label,
+      formula,
+      characterName: PENDING_ADV_ROLL.characterName
+    });
+  }
   closeAdvantageModal();
 }
 
