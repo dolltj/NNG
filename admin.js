@@ -11,6 +11,7 @@ let BASE_WEAPON_CONFIG = null;
 
 window.addEventListener('DOMContentLoaded', async () => {
   const resp = await fetch('config/weapons.json');
+  if (!resp.ok) throw new Error(`Failed to load config/weapons.json: ${resp.status}`);
   BASE_WEAPON_CONFIG = await resp.json();
 
   renderCustomWeaponsList();
