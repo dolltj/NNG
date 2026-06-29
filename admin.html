@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Builder for custom weapons and attachments for the NNG character sheet.">
+  <title>Weapon Admin — NNG Sheet</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+
+  <div id="admin-screen">
+    <header class="top-bar">
+      <a class="top-bar-back" href="index.html">← Character Vault</a>
+      <h1 class="top-bar-title">Weapon &amp; Attachment Admin</h1>
+      <div class="top-bar-actions">
+        <button class="btn btn-secondary" id="export-btn">↓ Export Custom Items</button>
+      </div>
+    </header>
+
+    <main class="tab-content">
+      <div class="section-header">Custom Weapons</div>
+      <div id="custom-weapons-list"></div>
+      <button class="btn btn-primary mt-md" id="new-weapon-btn">＋ New Weapon</button>
+      <div id="weapon-form-container"></div>
+
+      <div class="section-header mt-lg">Custom Attachments</div>
+      <div id="custom-attachments-list"></div>
+      <button class="btn btn-primary mt-md" id="new-attachment-btn">＋ New Attachment</button>
+      <div id="attachment-form-container"></div>
+    </main>
+  </div>
+
+  <script src="weapon-store.js"></script>
+  <script src="admin.js"></script>
+
+</body>
+</html>
