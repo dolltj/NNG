@@ -9,6 +9,7 @@
 // -----------------------------------------------
 let CONFIG        = null;   // loaded from nng.json
 let WEAPON_CONFIG  = null;  // loaded from weapons.json — { weapons: [], attachments: [] }
+let PERKS_CONFIG  = null;   // loaded from perks.json — array of perk dictionary entries
 let CHARACTERS    = {};     // { [id]: characterObject }
 let ACTIVE_ID     = null;   // currently open character id
 let SAVE_TIMER    = null;   // debounce handle for autosave
@@ -17,6 +18,7 @@ const STORAGE_CHARS_KEY  = 'ttrpg_characters';
 const STORAGE_ACTIVE_KEY = 'ttrpg_active_id';
 const CONFIG_URL         = 'config/nng.json';
 const WEAPONS_CONFIG_URL  = 'config/weapons.json';
+const PERKS_CONFIG_URL    = 'config/perks.json';
 
 // -----------------------------------------------
 // BOOTSTRAP
@@ -25,6 +27,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   CONFIG = await loadConfig(CONFIG_URL);
   WEAPON_CONFIG = await loadConfig(WEAPONS_CONFIG_URL);
   WEAPON_CONFIG = window.WeaponStore.getMergedConfig(WEAPON_CONFIG);
+  PERKS_CONFIG = await loadConfig(PERKS_CONFIG_URL);
   loadAllCharacters();
   renderRoster();
 });
