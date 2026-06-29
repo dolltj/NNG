@@ -24,6 +24,7 @@ const WEAPONS_CONFIG_URL  = 'config/weapons.json';
 window.addEventListener('DOMContentLoaded', async () => {
   CONFIG = await loadConfig(CONFIG_URL);
   WEAPON_CONFIG = await loadConfig(WEAPONS_CONFIG_URL);
+  WEAPON_CONFIG = window.WeaponStore.getMergedConfig(WEAPON_CONFIG);
   loadAllCharacters();
   renderRoster();
 });
@@ -132,6 +133,7 @@ function renderRoster() {
     <h1 class="roster-title">⚔ Character Vault</h1>
     <p class="roster-subtitle">${CONFIG.system} · Select or create a character</p>
     <div class="roster-grid" id="roster-grid"></div>
+    <a class="roster-admin-link" href="admin.html">⚙ Manage Weapons</a>
   `;
   const grid = document.getElementById('roster-grid');
 
@@ -722,7 +724,7 @@ function renderTabCombat(char) {
     <div class="flex gap-sm mt-md flex-wrap">
       <select class="field-input" id="add-weapon-select" style="flex:1">
         <option value="">+ Add Weapon…</option>
-        ${(WEAPON_CONFIG.weapons || []).map(w => `<option value="${w.id}">${escHtml(w.label)}</option>`).join('')}
+        ${(WEAPON_CONFIG.weapons || []).map(w => `<option value="${w.id}">${w._custom ? '🔧 ' : ''}${escHtml(w.label)}</option>`).join('')}
       </select>
       <button class="btn btn-primary" id="add-weapon-btn">Add</button>
     </div>
@@ -854,7 +856,7 @@ function buildAttachmentsSection(weaponInst, resolved) {
     addRow.innerHTML = `
       <select class="field-input" style="flex:1">
         <option value="">+ Add Attachment…</option>
-        ${available.map(a => `<option value="${a.id}">${escHtml(a.label)}</option>`).join('')}
+        ${available.map(a => `<option value="${a.id}">${a._custom ? '🔧 ' : ''}${escHtml(a.label)}</option>`).join('')}
       </select>
       <button class="btn btn-secondary">Add</button>
     `;
