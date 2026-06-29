@@ -185,6 +185,19 @@ body::before {
   margin-bottom: var(--space-xl);
 }
 
+.roster-admin-link {
+  display: block;
+  text-align: center;
+  margin-top: var(--space-lg);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.roster-admin-link:hover {
+  color: var(--gold);
+}
+
 .roster-card {
   background: var(--bg-raised);
   border: 1px solid var(--border-mid);
@@ -1421,6 +1434,53 @@ textarea.field-input {
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 .full-width { width: 100%; }
+
+/* =============================================
+   ADMIN PAGE (admin.html)
+   ============================================= */
+.admin-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.admin-item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.admin-item-label {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.admin-item-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.admin-action-row {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.admin-action-row-fields {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.admin-action-row-fields:last-child { margin-bottom: 0; }
 
 /* =============================================
    RESPONSIVE TWEAKS
