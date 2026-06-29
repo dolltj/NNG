@@ -1,0 +1,122 @@
+[
+  {
+    "id": "adrenaline_rush",
+    "name": "Adrenaline Rush",
+    "level": 1,
+    "prerequisite": "Level 1",
+    "effect": "You gain the Adrenaline Rush Action",
+    "action": { "type": "Action", "label": "Adrenaline Rush", "text": "You can place yourself at the top of the Initiative order." }
+  },
+  {
+    "id": "battlefield_medic",
+    "name": "Battlefield Medic",
+    "level": 1,
+    "prerequisite": "Level 1",
+    "effect": "You gain the Tend Action.",
+    "action": { "type": "Action", "label": "Tend (requires Med Kit)", "text": "Remove the bleeding condition from one character within Range 1. In addition, the target regains Hit Points equal to 1d10 + your Willpower score." }
+  },
+  {
+    "id": "tough_as_nails",
+    "name": "Tough as Nails",
+    "level": 1,
+    "prerequisite": "Level 1",
+    "effect": "Your Injury Threshold increases by 25% (round up).",
+    "action": null
+  },
+  {
+    "id": "interceptor",
+    "name": "Interceptor",
+    "level": 2,
+    "prerequisite": "Level 2",
+    "effect": "You gain the Interceptor Reaction.",
+    "action": { "type": "Reaction", "label": "Interceptor", "text": "When a character you can see hits another character within Range 1 of you with an attack, you can take a reaction to take the resulting damage from that attack instead of the original target." }
+  },
+  {
+    "id": "speed_freak",
+    "name": "Speed Freak",
+    "level": 2,
+    "prerequisite": "Level 2",
+    "effect": "Your Speed increases by 2. In addition, your movement ignores the movement penalty of difficult terrain when you take the Hustle action.",
+    "action": null
+  },
+  {
+    "id": "tactician",
+    "name": "Tactician",
+    "level": 2,
+    "prerequisite": "Level 2",
+    "effect": "You gain the Tactician Reaction.",
+    "action": { "type": "Reaction", "label": "Tactician", "text": "Whenever an ally character in line of sight misses with an attack, you may add 1 to the attack roll. This may cause the attack to hit." }
+  },
+  {
+    "id": "inspiring_leader",
+    "name": "Inspiring Leader",
+    "level": 3,
+    "prerequisite": "Level 3",
+    "effect": "You gain a number of Leadership Dice equal to your Willpower score, which are d6s, and gain the Issue Order Quick Action. If you run out of Leadership Dice, you regain 1 when you roll Initiative or regain all when you take a Long Rest.",
+    "action": { "type": "Quick Action", "label": "Issue Order", "text": "You may give one ally character a Leadership Die. They may expend the Leadership Die to add +1d6 to any Test, or they may return it to you as a Free Action on their turn. An ally character can have one Leadership Die at a time, which lasts until they take a Short or Long Rest." }
+  },
+  {
+    "id": "rotation",
+    "name": "Rotation",
+    "level": 3,
+    "prerequisite": "Level 3",
+    "effect": "You gain the Rotation Action.",
+    "action": { "type": "Action", "label": "Rotation", "text": "You and one other willing target within Range 2 swap places as long as no obstacles are between the two of you. In addition, you and the target gain the benefit of Soft Cover until the start of your next turn." }
+  },
+  {
+    "id": "through_the_gaps",
+    "name": "Through the Gaps",
+    "level": 3,
+    "prerequisite": "Level 3",
+    "effect": "Attacks with melee weapons that deal piercing damage deal additional damage to Hit Points equal to your Agility score.",
+    "action": null
+  },
+  {
+    "id": "pack_tactics",
+    "name": "Pack Tactics",
+    "level": 4,
+    "prerequisite": "Level 4",
+    "effect": "Gain Advantage to attack rolls with melee weapons if you have an ally next to your target.",
+    "action": null
+  },
+  {
+    "id": "shield_expert",
+    "name": "Shield Expert",
+    "level": 4,
+    "prerequisite": "Level 4",
+    "effect": "When you take the Shield Wall Action, all incoming physical damage dealt to your shield is reduced by twice your Fortitude score.",
+    "action": null
+  },
+  {
+    "id": "underdog",
+    "name": "Underdog",
+    "level": 4,
+    "prerequisite": "Level 4",
+    "effect": "You ignore the penalties imposed by the Flanked condition.",
+    "action": null
+  },
+  {
+    "id": "durable",
+    "name": "Durable",
+    "level": 5,
+    "prerequisite": "Level 5",
+    "effect": "When you're hit by an attack while wearing heavy armor, any physical damage dealt to your armor is reduced by an amount equal to your Fortitude score.",
+    "action": null
+  },
+  {
+    "id": "force_multiplier",
+    "name": "Force Multiplier",
+    "level": 5,
+    "prerequisite": "Level 5",
+    "effect": "Gain the Force Multiplier Quick Action.",
+    "action": { "type": "Quick Action", "label": "Force Multiplier", "text": "Choose an ally character within line of sight that can hear you. They can immediately spend their Reaction to make an attack against a character within Range. This attack deals additional damage equal to your Willpower Score." }
+  },
+  {
+    "id": "nimble",
+    "name": "Nimble",
+    "level": 5,
+    "prerequisite": "Level 5",
+    "effect": "When you're hit by an attack while wearing light armor, any physical damage dealt to your Hit Points is reduced by an amount equal to your Agility score.",
+    "action": null
+  }
+]
