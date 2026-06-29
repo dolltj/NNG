@@ -244,8 +244,196 @@ function renderWeaponForm(existingWeapon) {
   });
 }
 
-// Stub — replaced by Task 5 (attachments).
-function renderCustomAttachmentsList() {
-  document.getElementById('custom-attachments-list').innerHTML = '<p style="color:var(--text-muted)">(none yet)</p>';
+const EFFECT_TYPE_FIELDS = {
+  set_magazine_size: ['value', 'weapon'],
+  add_tag: ['tag'],
+  remove_tag: ['tag'],
+  action_hit_bonus: ['action', 'value'],
+  action_save_dv_bonus: ['action', 'value'],
+  remove_burst_disadvantage: []
+};
+
+function buildEffectRowForm(effect = {}, allWeapons) {
+  const row = document.createElement('div');
+  row.className = 'admin-action-row';
+  const type = effect.type || 'add_tag';
+
+  const weaponOptions = allWeapons.map(w =>
+    `<option value="${w.id}" ${effect.weapon === w.id ? 'selected' : ''}>${escHtml(w.label)}</option>`
+  ).join('');
+
+  row.innerHTML = `
+    <div class="admin-action-row-fields">
+      <select class="field-input" data-f="type" style="flex:2">
+        ${Object.keys(EFFECT_TYPE_FIELDS).map(t =>
+          `<option value="${t}" ${type === t ? 'selected' : ''}>${t.replace(/_/g, ' ')}</option>`
+        ).join('')}
+      </select>
+      <button class="delete-item-btn" data-remove title="Remove effect">✕</button>
+    </div>
+    <div class="admin-action-row-fields" data-fields="value">
+      <input class="field-input" placeholder="Value" type="number" data-f="value" value="${effect.value ?? ''}" style="flex:1">
+    </div>
+    <div class="admin-action-row-fields" data-fields="tag">
+      <input class="field-input" placeholder="Tag name" data-f="tag" value="${escHtml(effect.tag || '')}" style="flex:1">
+    </div>
+    <div class="admin-action-row-fields" data-fields="action">
+      <input class="field-input" placeholder="Action id (e.g. single_shot)" data-f="action" value="${escHtml(effect.action || '')}" style="flex:1">
+    </div>
+    <div class="admin-action-row-fields" data-fields="weapon">
+      <select class="field-input" data-f="weapon" style="flex:1">
+        <option value="">(applies to any compatible weapon)</option>
+        ${weaponOptions}
+      </select>
+    </div>
+  `;
+
+  function updateVisibility() {
+    const t = row.querySelector('[data-f="type"]').value;
+    const shownFields = EFFECT_TYPE_FIELDS[t] || [];
+    row.querySelectorAll('[data-fields]').forEach(el => {
+      el.style.display = shownFields.includes(el.dataset.fields) ? '' : 'none';
+    });
+  }
+  row.querySelector('[data-f="type"]').addEventListener('change', updateVisibility);
+  updateVisibility();
+  row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
+
+  row.readEffect = function () {
+    const t = row.querySelector('[data-f="type"]').value;
+    const eff = { type: t };
+    const fields = EFFECT_TYPE_FIELDS[t] || [];
+    if (fields.includes('value')) eff.value = parseInt(row.querySelector('[data-f="value"]').value) || 0;
+    if (fields.includes('tag')) eff.tag = row.querySelector('[data-f="tag"]').value.trim();
+    if (fields.includes('action')) eff.action = row.querySelector('[data-f="action"]').value.trim();
+    if (fields.includes('weapon')) {
+      const w = row.querySelector('[data-f="weapon"]').value;
+      if (w) eff.weapon = w;
+    }
+    return eff;
+  };
+
+  return row;
 }
-function renderAttachmentForm(_existingAttachment) {}
+
+function buildNoteRowForm(note = '') {
+  const row = document.createElement('div');
+  row.className = 'admin-action-row-fields';
+  row.innerHTML = `
+    <input class="field-input" placeholder="Note text" data-note value="${escHtml(note)}" style="flex:1">
+    <button class="delete-item-btn" data-remove title="Remove note">✕</button>
+  `;
+  row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
+  row.readNote = function () { return row.querySelector('[data-note]').value.trim(); };
+  return row;
+}
+
+function renderCustomAttachmentsList() {
+  const wrap = document.getElementById('custom-attachments-list');
+  wrap.innerHTML = '';
+  const attachments = WeaponStore.getCustomAttachments();
+  if (attachments.length === 0) {
+    wrap.innerHTML = '<p style="color:var(--text-muted)">(none yet)</p>';
+    return;
+  }
+  attachments.forEach(att => {
+    const row = document.createElement('div');
+    row.className = 'admin-item-row';
+    row.innerHTML = `
+      <span class="admin-item-label">${escHtml(att.label)}</span>
+      <span class="admin-item-meta">${(att.compatible_weapons || []).length} compatible weapon(s)</span>
+      <button class="btn btn-secondary" data-edit>Edit</button>
+      <button class="delete-item-btn" data-delete title="Delete">✕</button>
+    `;
+    row.querySelector('[data-edit]').addEventListener('click', () => renderAttachmentForm(att));
+    row.querySelector('[data-delete]').addEventListener('click', () => {
+      if (!confirm(`Delete custom attachment "${att.label}"?`)) return;
+      WeaponStore.deleteCustomAttachment(att.id);
+      renderCustomAttachmentsList();
+    });
+    wrap.appendChild(row);
+  });
+}
+
+function renderAttachmentForm(existingAttachment) {
+  const container = document.getElementById('attachment-form-container');
+  container.innerHTML = '';
+
+  const allWeapons = getAllWeapons();
+
+  const form = document.createElement('div');
+  form.className = 'admin-form';
+  form.innerHTML = `
+    <div class="char-info-grid">
+      <div class="field-group">
+        <label class="field-label">Label</label>
+        <input class="field-input" id="a-label" value="${escHtml(existingAttachment?.label || '')}">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Category</label>
+        <input class="field-input" id="a-category" value="${escHtml(existingAttachment?.category || '')}">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Description</label>
+      <textarea class="field-input" id="a-description">${escHtml(existingAttachment?.description || '')}</textarea>
+    </div>
+    <div class="section-header mt-md">Compatible Weapons</div>
+    <select class="field-input" id="a-compatible" multiple size="6">
+      ${allWeapons.map(w =>
+        `<option value="${w.id}" ${(existingAttachment?.compatible_weapons || []).includes(w.id) ? 'selected' : ''}>${escHtml(w.label)}</option>`
+      ).join('')}
+    </select>
+    <div class="section-header mt-md">Effects</div>
+    <div id="a-effects-list"></div>
+    <button class="btn btn-secondary mt-sm" id="a-add-effect-btn">＋ Add Effect</button>
+    <div class="section-header mt-md">Notes</div>
+    <div id="a-notes-list"></div>
+    <button class="btn btn-secondary mt-sm" id="a-add-note-btn">＋ Add Note</button>
+    <div class="flex gap-sm mt-md">
+      <button class="btn btn-primary" id="a-save-btn">Save Attachment</button>
+      <button class="btn btn-secondary" id="a-cancel-btn">Cancel</button>
+    </div>
+  `;
+  container.appendChild(form);
+
+  const effectsList = document.getElementById('a-effects-list');
+  (existingAttachment?.effects || []).forEach(e => effectsList.appendChild(buildEffectRowForm(e, allWeapons)));
+  document.getElementById('a-add-effect-btn').addEventListener('click', () => {
+    effectsList.appendChild(buildEffectRowForm({}, allWeapons));
+  });
+
+  const notesList = document.getElementById('a-notes-list');
+  (existingAttachment?.notes || []).forEach(n => notesList.appendChild(buildNoteRowForm(n)));
+  document.getElementById('a-add-note-btn').addEventListener('click', () => {
+    notesList.appendChild(buildNoteRowForm());
+  });
+
+  document.getElementById('a-cancel-btn').addEventListener('click', () => { container.innerHTML = ''; });
+
+  document.getElementById('a-save-btn').addEventListener('click', () => {
+    const label = document.getElementById('a-label').value.trim();
+    if (!label) { alert('Label is required.'); return; }
+
+    const officialIds = (BASE_WEAPON_CONFIG.attachments || []).map(a => a.id);
+    const customIds = WeaponStore.getCustomAttachments().map(a => a.id).filter(id => id !== existingAttachment?.id);
+    const id = existingAttachment?.id || uniqueId(slugify(label), [...officialIds, ...customIds]);
+
+    const compatible_weapons = Array.from(document.getElementById('a-compatible').selectedOptions).map(o => o.value);
+    const effects = Array.from(effectsList.children).map(row => row.readEffect());
+    const notes = Array.from(notesList.children).map(row => row.readNote()).filter(Boolean);
+
+    WeaponStore.saveCustomAttachment({
+      id,
+      label,
+      category: document.getElementById('a-category').value.trim(),
+      compatible_weapons,
+      description: document.getElementById('a-description').value.trim(),
+      effects,
+      notes
+    });
+
+    container.innerHTML = '';
+    renderCustomAttachmentsList();
+  });
+}
