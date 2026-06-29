@@ -718,62 +718,40 @@ function renderTabCombat(char) {
     <div class="combat-stats-row" id="combat-stats-row"></div>
 
     <div class="section-header mt-md">Weapons</div>
-    <table class="attacks-table" id="attacks-table">
-      <thead>
-        <tr>
-          <th>Weapon</th>
-          <th>Bonus</th>
-          <th>Attack</th>
-          <th>Damage</th>
-          <th>Range</th>
-          <th>Ammo</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="attacks-tbody"></tbody>
-    </table>
+    <div id="weapons-list"></div>
     <div class="flex gap-sm mt-md flex-wrap">
-      <button class="btn btn-secondary" id="add-weapon-btn">＋ Add Weapon</button>
-    </div>
-    <div class="attack-form mt-md" id="attack-form">
-      <input class="field-input" id="atk-name"   placeholder="Weapon name" style="flex:2">
-      <input class="field-input" id="atk-damage" placeholder="Damage (e.g. 2d6)" style="flex:1">
-      <input class="field-input" id="atk-range"  placeholder="Range" style="flex:1">
-      <input class="field-input" id="atk-ammo-max" placeholder="Ammo max" type="number" min="0" style="flex:1">
-      <button class="btn btn-primary" id="atk-save-btn">Add</button>
-      <button class="btn btn-secondary" id="atk-cancel-btn">Cancel</button>
+      <select class="field-input" id="add-weapon-select" style="flex:1">
+        <option value="">+ Add Weapon…</option>
+        ${(WEAPON_CONFIG.weapons || []).map(w => `<option value="${w.id}">${escHtml(w.label)}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary" id="add-weapon-btn">Add</button>
     </div>
   `;
 
   buildCombatStatsRow(char);
-  renderAttacksTable(char);
+  renderWeaponsList(char);
 
   document.getElementById('add-weapon-btn').addEventListener('click', () => {
-    document.getElementById('attack-form').classList.toggle('open');
-  });
-  document.getElementById('atk-cancel-btn').addEventListener('click', () => {
-    document.getElementById('attack-form').classList.remove('open');
-  });
-  document.getElementById('atk-save-btn').addEventListener('click', () => {
-    const name = document.getElementById('atk-name').value.trim();
-    if (!name) return;
-    const ammoMax = parseInt(document.getElementById('atk-ammo-max').value) || 0;
+    const select = document.getElementById('add-weapon-select');
+    const weaponId = select.value;
+    if (!weaponId) return;
+    const def = findWeaponDef(weaponId);
+    if (!def) return;
     getChar().weapons.push({
-      id:      'weapon_' + Date.now(),
-      label:   name,
-      damage:  document.getElementById('atk-damage').value || '1d4',
-      range:   document.getElementById('atk-range').value,
-      bonus:   0,
-      ammo:    ammoMax > 0 ? { current: ammoMax, max: ammoMax } : null
+      id: 'weapon_' + Date.now(),
+      weapon_id: weaponId,
+      bonus: 0,
+      attachments: [],
+      ammo: def.magazine_size != null ? { current: def.magazine_size } : null
     });
     scheduleSave();
-    document.getElementById('attack-form').classList.remove('open');
-    document.getElementById('atk-name').value     = '';
-    document.getElementById('atk-damage').value   = '';
-    document.getElementById('atk-range').value    = '';
-    document.getElementById('atk-ammo-max').value = '';
-    renderAttacksTable(getChar());
+    select.value = '';
+    renderWeaponsList(getChar());
   });
+}
+
+function renderWeaponsList(char) {
+  document.getElementById('weapons-list').innerHTML = '(weapons list — implemented in Task 5)';
 }
 
 function buildCombatStatsRow(char) {
@@ -828,69 +806,6 @@ function buildCombatStatsRow(char) {
     window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName });
   });
   wrap.appendChild(initEl);
-}
-
-function renderAttacksTable(char) {
-  const tbody = document.getElementById('attacks-tbody');
-  tbody.innerHTML = '';
-
-  (char.weapons || []).forEach(weapon => {
-    const tr = document.createElement('tr');
-    const ammoText = weapon.ammo ? `${weapon.ammo.current}/${weapon.ammo.max}` : '—';
-
-    tr.innerHTML = `
-      <td><strong>${escHtml(weapon.label)}</strong></td>
-      <td><input class="currency-input" style="width:48px" type="number" data-weapon-bonus="${weapon.id}" value="${weapon.bonus ?? 0}"></td>
-      <td><button class="attack-roll-btn" data-wpn-id="${weapon.id}">🎲 2d10</button></td>
-      <td><button class="damage-roll-btn" data-wpn-id="${weapon.id}">⚔ ${escHtml(weapon.damage)}</button></td>
-      <td style="font-size:0.8rem;color:var(--text-muted)">${escHtml(weapon.range || '—')}</td>
-      <td style="font-size:0.8rem;color:var(--text-muted)">
-        ${weapon.ammo
-          ? `<input class="currency-input" style="width:50px" type="number" min="0" max="${weapon.ammo.max}" value="${weapon.ammo.current}" data-ammo-current="${weapon.id}">/${weapon.ammo.max}`
-          : '—'}
-      </td>
-      <td><button class="delete-attack-btn" data-wpn-id="${weapon.id}" title="Remove">✕</button></td>
-    `;
-
-    tr.querySelector('[data-weapon-bonus]').addEventListener('change', e => {
-      weapon.bonus = parseInt(e.target.value) || 0;
-      scheduleSave();
-    });
-
-    tr.querySelector('.attack-roll-btn').addEventListener('click', e => {
-      const label = `${weapon.label} — Attack`;
-      const characterName = rollCharacterName(getChar());
-      if (e.shiftKey) {
-        openAdvantageModal({ label, baseDieCount: 2, modifier: weapon.bonus ?? 0, characterName });
-        return;
-      }
-      const formula = buildTestFormula(weapon.bonus ?? 0);
-      window.Roll20Bridge.sendToRoll20({ label, formula, characterName });
-    });
-
-    tr.querySelector('.damage-roll-btn').addEventListener('click', () => {
-      window.Roll20Bridge.sendToRoll20({ label: `${weapon.label} — Damage`, formula: weapon.damage, characterName: rollCharacterName(getChar()) });
-    });
-
-    const ammoInput = tr.querySelector('[data-ammo-current]');
-    if (ammoInput) {
-      ammoInput.addEventListener('change', e => {
-        weapon.ammo.current = Math.max(0, Math.min(weapon.ammo.max, parseInt(e.target.value) || 0));
-        scheduleSave();
-        renderAttacksTable(getChar());
-      });
-    }
-
-    tr.querySelector('.delete-attack-btn').addEventListener('click', () => {
-      if (!confirm(`Remove weapon "${weapon.label}"?`)) return;
-      const c = getChar();
-      c.weapons = c.weapons.filter(w => w.id !== weapon.id);
-      scheduleSave();
-      renderAttacksTable(c);
-    });
-
-    tbody.appendChild(tr);
-  });
 }
 
 // -----------------------------------------------
