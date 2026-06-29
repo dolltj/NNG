@@ -809,7 +809,67 @@ function buildWeaponCard(weaponInst, resolved, char) {
 }
 
 function buildAttachmentsSection(weaponInst, resolved, char) {
-  return document.createElement('div'); // implemented in Task 6
+  const section = document.createElement('div');
+  section.className = 'weapon-attachments';
+
+  const equipped = (weaponInst.attachments || [])
+    .map(id => ({ id, def: findAttachmentDef(id) }))
+    .filter(a => a.def);
+
+  equipped.forEach(({ id, def }) => {
+    const row = document.createElement('div');
+    row.className = 'weapon-attachment-row';
+    row.innerHTML = `
+      <span class="weapon-attachment-label">${escHtml(def.label)}</span>
+      <button class="delete-item-btn" title="Remove">✕</button>
+    `;
+    row.querySelector('.delete-item-btn').addEventListener('click', () => {
+      weaponInst.attachments = weaponInst.attachments.filter(a => a !== id);
+      if (weaponInst.ammo) {
+        const newResolved = resolveWeapon(weaponInst);
+        if (newResolved.magazine_size != null) {
+          weaponInst.ammo.current = Math.min(weaponInst.ammo.current, newResolved.magazine_size);
+        }
+      }
+      scheduleSave();
+      renderWeaponsList(getChar());
+    });
+    section.appendChild(row);
+  });
+
+  resolved.attachmentNotes.forEach(note => {
+    const noteEl = document.createElement('div');
+    noteEl.className = 'weapon-attachment-note';
+    noteEl.textContent = `• ${note}`;
+    section.appendChild(noteEl);
+  });
+
+  const available = (WEAPON_CONFIG.attachments || [])
+    .filter(a => a.compatible_weapons.includes(weaponInst.weapon_id))
+    .filter(a => !(weaponInst.attachments || []).includes(a.id));
+
+  if (available.length > 0) {
+    const addRow = document.createElement('div');
+    addRow.className = 'flex gap-sm mt-sm';
+    addRow.innerHTML = `
+      <select class="field-input" style="flex:1">
+        <option value="">+ Add Attachment…</option>
+        ${available.map(a => `<option value="${a.id}">${escHtml(a.label)}</option>`).join('')}
+      </select>
+      <button class="btn btn-secondary">Add</button>
+    `;
+    const select = addRow.querySelector('select');
+    addRow.querySelector('button').addEventListener('click', () => {
+      if (!select.value) return;
+      weaponInst.attachments = weaponInst.attachments || [];
+      weaponInst.attachments.push(select.value);
+      scheduleSave();
+      renderWeaponsList(getChar());
+    });
+    section.appendChild(addRow);
+  }
+
+  return section;
 }
 
 function buildActionRow(weaponInst, resolved, action, char) {
