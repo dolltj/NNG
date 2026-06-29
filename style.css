@@ -1136,6 +1136,42 @@ textarea.field-input {
 .equipment-item:hover .delete-item-btn { opacity: 1; }
 .delete-item-btn:hover { color: var(--color-hp); }
 
+/* =============================================
+   PERKS LIST
+   ============================================= */
+.perks-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.perk-item {
+  padding: var(--space-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.perk-item:hover { border-color: var(--border-mid); }
+
+.perk-item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.perk-item-name { flex: 1; font-weight: 600; color: var(--text-primary); }
+
+.perk-item:hover .delete-item-btn { opacity: 1; }
+
+.perk-detail {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: var(--space-xs);
+  line-height: 1.4;
+}
+
 .currency-input {
   background: var(--bg-surface);
   border: 1px solid var(--border-mid);
