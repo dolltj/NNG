@@ -203,6 +203,68 @@ function rollCharacterName(char) {
   return player ? `${name} (${player})` : name;
 }
 
+function findWeaponDef(weaponId) {
+  return (WEAPON_CONFIG.weapons || []).find(w => w.id === weaponId) || null;
+}
+
+function findAttachmentDef(attachmentId) {
+  return (WEAPON_CONFIG.attachments || []).find(a => a.id === attachmentId) || null;
+}
+
+/**
+ * Merge a weapon instance's base dictionary definition with all of its
+ * equipped attachments' effects into one resolved view. Returns null if
+ * weaponInstance.weapon_id doesn't match anything in the dictionary
+ * (e.g. an orphaned pre-rewrite weapon entry on an old saved character).
+ */
+function resolveWeapon(weaponInstance) {
+  const base = findWeaponDef(weaponInstance.weapon_id);
+  if (!base) return null;
+
+  const attachments = (weaponInstance.attachments || [])
+    .map(findAttachmentDef)
+    .filter(Boolean);
+
+  const tags = new Set(base.tags || []);
+  let magazineSize = base.magazine_size;
+  let burstDisadvantageRemoved = false;
+  const actionHitBonus = {};
+  const actionDvBonus = {};
+  const attachmentNotes = [];
+
+  attachments.forEach(att => {
+    (att.effects || []).forEach(eff => {
+      if (eff.weapon && eff.weapon !== base.id) return;
+      switch (eff.type) {
+        case 'set_magazine_size':       magazineSize = eff.value; break;
+        case 'add_tag':                 tags.add(eff.tag); break;
+        case 'remove_tag':              tags.delete(eff.tag); break;
+        case 'action_hit_bonus':        actionHitBonus[eff.action] = (actionHitBonus[eff.action] || 0) + eff.value; break;
+        case 'action_save_dv_bonus':    actionDvBonus[eff.action]  = (actionDvBonus[eff.action]  || 0) + eff.value; break;
+        case 'remove_burst_disadvantage': burstDisadvantageRemoved = true; break;
+      }
+    });
+    (att.notes || []).forEach(n => attachmentNotes.push(n));
+  });
+
+  const actions = base.actions.map(a => ({
+    ...a,
+    hit_bonus: actionHitBonus[a.id] || 0,
+    save_dv: a.save_dv != null ? a.save_dv + (actionDvBonus[a.id] || 0) : null
+  }));
+
+  return {
+    id: base.id,
+    label: base.label,
+    category: base.category,
+    tags: Array.from(tags),
+    magazine_size: magazineSize,
+    actions,
+    burst_disadvantage_removed: burstDisadvantageRemoved,
+    attachmentNotes
+  };
+}
+
 // -----------------------------------------------
 // RENDER FULL SHEET
 // -----------------------------------------------
