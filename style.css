@@ -935,58 +935,6 @@ textarea.field-input {
 
 .skill-roll-btn:hover { color: var(--gold); }
 
-/* =============================================
-   ATTACKS TABLE
-   ============================================= */
-.attacks-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: var(--space-lg);
-}
-
-.attacks-table thead th {
-  font-family: var(--font-display);
-  font-size: 0.65rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  padding: var(--space-xs) var(--space-sm);
-  text-align: left;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.attacks-table tbody tr {
-  border-bottom: 1px solid var(--border-subtle);
-  transition: background var(--transition-fast);
-}
-
-.attacks-table tbody tr:hover {
-  background: var(--bg-raised);
-}
-
-.attacks-table td {
-  padding: var(--space-sm);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  vertical-align: middle;
-}
-
-.attacks-table td:first-child {
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.damage-type-badge {
-  display: inline-block;
-  font-size: 0.65rem;
-  padding: 2px 7px;
-  border-radius: var(--radius-full);
-  border: 1px solid currentColor;
-  text-transform: capitalize;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
 .attack-roll-btn, .damage-roll-btn {
   background: none;
   border: 1px solid var(--border-mid);
@@ -1020,28 +968,109 @@ textarea.field-input {
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
   transition: all var(--transition-fast);
-  opacity: 0;
 }
 
-tr:hover .delete-attack-btn { opacity: 1; }
 .delete-attack-btn:hover { color: var(--color-hp); }
 
-/* Attack form */
-.attack-form {
+/* =============================================
+   WEAPON CARDS
+   ============================================= */
+.weapon-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-accent);
+  border: 1px solid var(--border-mid);
   border-radius: var(--radius-md);
   padding: var(--space-md);
-  display: none;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
 }
 
-.attack-form.open { display: flex; }
+.weapon-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
 
-.attack-form .field-input {
+.weapon-card-title { display: flex; flex-direction: column; gap: 2px; }
+
+.weapon-card-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.weapon-card-tags {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.weapon-card-header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.weapon-card-ammo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--gold);
+  font-size: 0.9rem;
+}
+
+.weapon-action-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-sm);
+}
+
+.weapon-action-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 32px;
+}
+
+.weapon-action-label {
+  flex: 0 0 130px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.weapon-action-meta {
   flex: 1;
-  min-width: 120px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.weapon-attachments {
+  border-top: 1px solid var(--border-subtle);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+}
+
+.weapon-attachment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 2px 0;
+}
+
+.weapon-attachment-row .delete-item-btn { opacity: 1; }
+
+.weapon-attachment-label { font-size: 0.8rem; color: var(--text-secondary); }
+
+.weapon-attachment-note {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 2px;
 }
 
 /* =============================================
