@@ -117,6 +117,7 @@ function buildDefaultCharacter(id) {
     initiative_bonus: 0,
     skills,
     perks:        [],
+    show_all_perks: false,
     origin_perk:  { name: '', description: '' },
     injuries:           [],
     critical_injuries:  [],
@@ -351,13 +352,7 @@ function renderTabInfo(char) {
     });
   });
 
-  buildTextEntryList(document.getElementById('perks-list'), char.perks, {
-    maxCount: 10,
-    secondFieldLabel: 'Description',
-    secondFieldType: 'text',
-    addButtonLabel: '+ Add Perk',
-    onChange: () => renderTabInfo(getChar())
-  });
+  buildPerksList(document.getElementById('perks-list'), char);
 }
 
 function infoField(label, field, value) {
@@ -1251,6 +1246,112 @@ function buildTextEntryList(container, items, opts) {
     items.push(entry);
     scheduleSave();
     onChange();
+  });
+}
+
+// -----------------------------------------------
+// PERKS LIST (dedicated renderer — NOT buildTextEntryList)
+// Renders both free-form {name, description} perks and
+// dictionary-sourced {name, prerequisite, effect, action} perks.
+// All mutation handlers re-fetch via getChar() rather than closing
+// over the `char` param, to avoid the stale-character-reference bug
+// class found in the weapon-attachment-config work.
+// -----------------------------------------------
+function buildPerksList(container, char) {
+  container.innerHTML = '';
+
+  const list = document.createElement('div');
+  list.className = 'perks-item-list';
+  (char.perks || []).forEach((perk, i) => {
+    const row = document.createElement('div');
+    row.className = 'perk-item';
+
+    let detailHtml = '';
+    if (perk.prerequisite || perk.effect || perk.action) {
+      const parts = [];
+      if (perk.prerequisite) parts.push(`<strong>Prerequisite.</strong> ${escHtml(perk.prerequisite)}`);
+      if (perk.effect) parts.push(`<strong>Effect.</strong> ${escHtml(perk.effect)}`);
+      if (perk.action) parts.push(`<strong>${escHtml(perk.action.type)}: ${escHtml(perk.action.label)}.</strong> ${escHtml(perk.action.text)}`);
+      detailHtml = `<div class="perk-detail">${parts.join('<br>')}</div>`;
+    } else if (perk.description) {
+      detailHtml = `<div class="perk-detail">${escHtml(perk.description)}</div>`;
+    }
+
+    row.innerHTML = `
+      <div class="perk-item-row">
+        <span class="perk-item-name">${escHtml(perk.name)}</span>
+        <button class="delete-item-btn" title="Remove">✕</button>
+      </div>
+      ${detailHtml}
+    `;
+    row.querySelector('.delete-item-btn').addEventListener('click', () => {
+      getChar().perks.splice(i, 1);
+      scheduleSave();
+      renderTabInfo(getChar());
+    });
+    list.appendChild(row);
+  });
+  container.appendChild(list);
+
+  if ((char.perks || []).length >= 10) return; // at cap, no add forms
+
+  // Free-form add row (same behavior as the old buildTextEntryList call)
+  const freeForm = document.createElement('div');
+  freeForm.className = 'flex gap-sm mt-md flex-wrap';
+  freeForm.innerHTML = `
+    <input class="field-input" placeholder="Name" id="perk-ff-name" style="flex:2">
+    <input class="field-input" placeholder="Description" id="perk-ff-desc" style="flex:2">
+    <button class="btn btn-secondary" id="perk-ff-add">+ Add Perk</button>
+  `;
+  container.appendChild(freeForm);
+
+  document.getElementById('perk-ff-add').addEventListener('click', () => {
+    const name = document.getElementById('perk-ff-name').value.trim();
+    if (!name) return;
+    const description = document.getElementById('perk-ff-desc').value.trim();
+    getChar().perks.push({ name, description });
+    scheduleSave();
+    renderTabInfo(getChar());
+  });
+
+  // Dictionary add row
+  const eligiblePerks = (PERKS_CONFIG || []).filter(p => char.show_all_perks || p.level <= (char.level || 1));
+  const dictWrap = document.createElement('div');
+  dictWrap.className = 'flex gap-sm mt-sm flex-wrap';
+  dictWrap.innerHTML = `
+    <label class="flex gap-xs" style="align-items:center;font-size:0.8rem;color:var(--text-muted)">
+      <input type="checkbox" id="perk-show-all" ${char.show_all_perks ? 'checked' : ''}>
+      Show perks above my level
+    </label>
+    <select class="field-input" id="perk-dict-select" style="flex:1">
+      <option value="">+ Add from Dictionary…</option>
+      ${eligiblePerks.map(p => `<option value="${p.id}">Lv ${p.level} — ${escHtml(p.name)}</option>`).join('')}
+    </select>
+    <button class="btn btn-primary" id="perk-dict-add">Add</button>
+  `;
+  container.appendChild(dictWrap);
+
+  document.getElementById('perk-show-all').addEventListener('change', (e) => {
+    getChar().show_all_perks = e.target.checked;
+    scheduleSave();
+    renderTabInfo(getChar());
+  });
+
+  document.getElementById('perk-dict-add').addEventListener('click', () => {
+    const select = document.getElementById('perk-dict-select');
+    const perkId = select.value;
+    if (!perkId) return;
+    const def = (PERKS_CONFIG || []).find(p => p.id === perkId);
+    if (!def) return;
+    getChar().perks.push({
+      name: def.name,
+      description: '',
+      prerequisite: def.prerequisite,
+      effect: def.effect,
+      action: def.action
+    });
+    scheduleSave();
+    renderTabInfo(getChar());
   });
 }
 
