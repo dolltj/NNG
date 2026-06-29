@@ -751,7 +751,139 @@ function renderTabCombat(char) {
 }
 
 function renderWeaponsList(char) {
-  document.getElementById('weapons-list').innerHTML = '(weapons list — implemented in Task 5)';
+  const wrap = document.getElementById('weapons-list');
+  wrap.innerHTML = '';
+  (char.weapons || []).forEach(weaponInst => {
+    const resolved = resolveWeapon(weaponInst);
+    if (!resolved) return; // orphaned weapon_id with no matching dictionary entry
+    wrap.appendChild(buildWeaponCard(weaponInst, resolved, char));
+  });
+}
+
+function buildWeaponCard(weaponInst, resolved, char) {
+  const card = document.createElement('div');
+  card.className = 'weapon-card';
+
+  const ammoHtml = weaponInst.ammo
+    ? `<span class="weapon-card-ammo">${weaponInst.ammo.current}/${resolved.magazine_size}</span>`
+    : '';
+
+  card.innerHTML = `
+    <div class="weapon-card-header">
+      <div class="weapon-card-title">
+        <span class="weapon-card-label">${escHtml(resolved.label)}</span>
+        <span class="weapon-card-tags">${escHtml((resolved.tags || []).join(', '))}</span>
+      </div>
+      <div class="weapon-card-header-controls">
+        ${ammoHtml}
+        <span class="combat-stat-chip-label">Bonus</span>
+        <input class="currency-input" style="width:44px" type="number" value="${weaponInst.bonus ?? 0}" data-weapon-bonus>
+        <button class="delete-attack-btn" title="Remove">✕</button>
+      </div>
+    </div>
+  `;
+
+  card.querySelector('[data-weapon-bonus]').addEventListener('change', e => {
+    weaponInst.bonus = parseInt(e.target.value) || 0;
+    scheduleSave();
+  });
+
+  card.querySelector('.delete-attack-btn').addEventListener('click', () => {
+    if (!confirm(`Remove weapon "${resolved.label}"?`)) return;
+    const c = getChar();
+    c.weapons = c.weapons.filter(w => w.id !== weaponInst.id);
+    scheduleSave();
+    renderWeaponsList(c);
+  });
+
+  const actionsWrap = document.createElement('div');
+  actionsWrap.className = 'weapon-action-rows';
+  resolved.actions.forEach(action => {
+    actionsWrap.appendChild(buildActionRow(weaponInst, resolved, action, char));
+  });
+  card.appendChild(actionsWrap);
+
+  card.appendChild(buildAttachmentsSection(weaponInst, resolved, char));
+
+  return card;
+}
+
+function buildAttachmentsSection(weaponInst, resolved, char) {
+  return document.createElement('div'); // implemented in Task 6
+}
+
+function buildActionRow(weaponInst, resolved, action, char) {
+  const row = document.createElement('div');
+  row.className = 'weapon-action-row';
+
+  if (action.is_reload) {
+    row.innerHTML = `
+      <span class="weapon-action-label">${escHtml(action.label)}</span>
+      <button class="btn btn-secondary weapon-reload-btn">Reload</button>
+    `;
+    row.querySelector('.weapon-reload-btn').addEventListener('click', () => {
+      weaponInst.ammo.current = resolved.magazine_size;
+      scheduleSave();
+      renderWeaponsList(getChar());
+    });
+    return row;
+  }
+
+  const notesParts = [];
+  if (action.area_of_effect != null) notesParts.push(`AoE ${action.area_of_effect}`);
+  if (action.save_dv != null) notesParts.push(`DV ${action.save_dv} negates`);
+  const notesText = notesParts.length ? ` (${notesParts.join(', ')})` : '';
+
+  const hasAmmo = weaponInst.ammo != null;
+  const insufficientAmmo = hasAmmo && action.ammo_cost && weaponInst.ammo.current < action.ammo_cost;
+
+  row.innerHTML = `
+    <span class="weapon-action-label">${escHtml(action.label)}</span>
+    <span class="weapon-action-meta">Rng ${escHtml(String(action.range))}${escHtml(notesText)}</span>
+    <button class="attack-roll-btn"${insufficientAmmo ? ' disabled' : ''}>🎲 Attack</button>
+    <button class="damage-roll-btn">⚔ ${escHtml(action.damage)}</button>
+  `;
+
+  row.querySelector('.attack-roll-btn').addEventListener('click', e => {
+    if (insufficientAmmo) return;
+
+    const modifier = (weaponInst.bonus ?? 0) + (action.hit_bonus || 0);
+    const label = `${resolved.label} — ${action.label}`;
+    const characterName = rollCharacterName(char);
+    const isBurst = !!action.burst_fire && !resolved.burst_disadvantage_removed;
+    const attackCount = isBurst ? (action.attack_count || 1) : 1;
+
+    if (e.shiftKey) {
+      openAdvantageModal({
+        label, baseDieCount: 2, modifier, characterName,
+        attackCount, presetDisadvantage: isBurst ? 1 : 0
+      });
+    } else if (isBurst) {
+      const formula = buildAdvantageFormula(2, modifier, 0, 1);
+      for (let i = 1; i <= attackCount; i++) {
+        window.Roll20Bridge.sendToRoll20({ label: `${label} (${i}/${attackCount})`, formula, characterName });
+      }
+    } else {
+      const formula = buildTestFormula(modifier);
+      window.Roll20Bridge.sendToRoll20({ label, formula, characterName });
+    }
+
+    if (hasAmmo && action.ammo_cost) {
+      weaponInst.ammo.current = Math.max(0, weaponInst.ammo.current - action.ammo_cost);
+      scheduleSave();
+      renderWeaponsList(getChar());
+    }
+  });
+
+  row.querySelector('.damage-roll-btn').addEventListener('click', () => {
+    window.Roll20Bridge.sendToRoll20({
+      label: `${resolved.label} — ${action.label} Damage`,
+      formula: action.damage,
+      characterName: rollCharacterName(getChar())
+    });
+  });
+
+  return row;
 }
 
 function buildCombatStatsRow(char) {
