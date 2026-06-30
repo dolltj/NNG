@@ -64,15 +64,24 @@
     _save(data);
   }
 
+  // Deep-clones via JSON round-trip (all weapon/attachment data is plain
+  // JSON) so the merged result never shares nested array/object references
+  // (actions, effects, tags, ...) with baseConfig or the custom store —
+  // callers that render a fresh merge on every call (e.g. admin.js) must
+  // never accidentally mutate the official/custom source data in place.
+  function _deepClone(item) {
+    return JSON.parse(JSON.stringify(item));
+  }
+
   function _mergeList(officialList, customList) {
-    const merged = (officialList || []).map(item => ({ ...item }));
+    const merged = (officialList || []).map(_deepClone);
     const newItems = [];
-    customList.forEach(item => {
+    (customList || []).forEach(item => {
       const idx = merged.findIndex(m => m.id === item.id);
       if (idx >= 0) {
-        merged[idx] = { ...item, _overridden: true };
+        merged[idx] = { ..._deepClone(item), _overridden: true };
       } else {
-        newItems.push({ ...item, _custom: true });
+        newItems.push({ ..._deepClone(item), _custom: true });
       }
     });
     return [...merged, ...newItems];
