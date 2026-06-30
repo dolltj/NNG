@@ -14,8 +14,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (!resp.ok) throw new Error(`Failed to load config/weapons.json: ${resp.status}`);
   BASE_WEAPON_CONFIG = await resp.json();
 
-  renderCustomWeaponsList();
-  renderCustomAttachmentsList();
+  renderWeaponsList();
+  renderAttachmentsList();
 
   document.getElementById('new-weapon-btn').addEventListener('click', () => renderWeaponForm(null));
   document.getElementById('new-attachment-btn').addEventListener('click', () => renderAttachmentForm(null));
@@ -23,7 +23,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 function getAllWeapons() {
-  return [...(BASE_WEAPON_CONFIG.weapons || []), ...WeaponStore.getCustomWeapons()];
+  return WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG).weapons;
+}
+
+function getAllAttachments() {
+  return WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG).attachments;
 }
 
 function exportCustomItems() {
@@ -138,10 +142,10 @@ function buildActionRowForm(action = {}) {
   return row;
 }
 
-function renderCustomWeaponsList() {
-  const wrap = document.getElementById('custom-weapons-list');
+function renderWeaponsList() {
+  const wrap = document.getElementById('weapons-list');
   wrap.innerHTML = '';
-  const weapons = WeaponStore.getCustomWeapons();
+  const weapons = getAllWeapons();
   if (weapons.length === 0) {
     wrap.innerHTML = '<p style="color:var(--text-muted)">(none yet)</p>';
     return;
@@ -149,18 +153,34 @@ function renderCustomWeaponsList() {
   weapons.forEach(weapon => {
     const row = document.createElement('div');
     row.className = 'admin-item-row';
+    const badge = weapon._overridden
+      ? '<span class="admin-item-badge badge-edited">Edited</span>'
+      : weapon._custom
+        ? ''
+        : '<span class="admin-item-badge badge-official">Official</span>';
+    const canDelete = weapon._overridden || weapon._custom;
+    const deleteBtnHtml = canDelete
+      ? `<button class="delete-item-btn" data-delete title="${weapon._overridden ? 'Revert to official version' : 'Delete'}">✕</button>`
+      : '';
     row.innerHTML = `
-      <span class="admin-item-label">${escHtml(weapon.label)}</span>
-      <span class="admin-item-meta">${weapon.actions.length} action${weapon.actions.length === 1 ? '' : 's'}</span>
+      <span class="admin-item-label">${weapon._custom ? '🔧 ' : ''}${escHtml(weapon.label)}</span>
+      ${badge}
+      <span class="admin-item-meta">${(weapon.actions || []).length} action${(weapon.actions || []).length === 1 ? '' : 's'}</span>
       <button class="btn btn-secondary" data-edit>Edit</button>
-      <button class="delete-item-btn" data-delete title="Delete">✕</button>
+      ${deleteBtnHtml}
     `;
     row.querySelector('[data-edit]').addEventListener('click', () => renderWeaponForm(weapon));
-    row.querySelector('[data-delete]').addEventListener('click', () => {
-      if (!confirm(`Delete custom weapon "${weapon.label}"?`)) return;
-      WeaponStore.deleteCustomWeapon(weapon.id);
-      renderCustomWeaponsList();
-    });
+    const deleteBtn = row.querySelector('[data-delete]');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        const msg = weapon._overridden
+          ? `Revert "${weapon.label}" to its official version?`
+          : `Delete custom weapon "${weapon.label}"?`;
+        if (!confirm(msg)) return;
+        WeaponStore.deleteCustomWeapon(weapon.id);
+        renderWeaponsList();
+      });
+    }
     wrap.appendChild(row);
   });
 }
@@ -240,7 +260,7 @@ function renderWeaponForm(existingWeapon) {
     });
 
     container.innerHTML = '';
-    renderCustomWeaponsList();
+    renderWeaponsList();
   });
 }
 
@@ -328,10 +348,10 @@ function buildNoteRowForm(note = '') {
   return row;
 }
 
-function renderCustomAttachmentsList() {
-  const wrap = document.getElementById('custom-attachments-list');
+function renderAttachmentsList() {
+  const wrap = document.getElementById('attachments-list');
   wrap.innerHTML = '';
-  const attachments = WeaponStore.getCustomAttachments();
+  const attachments = getAllAttachments();
   if (attachments.length === 0) {
     wrap.innerHTML = '<p style="color:var(--text-muted)">(none yet)</p>';
     return;
@@ -339,18 +359,34 @@ function renderCustomAttachmentsList() {
   attachments.forEach(att => {
     const row = document.createElement('div');
     row.className = 'admin-item-row';
+    const badge = att._overridden
+      ? '<span class="admin-item-badge badge-edited">Edited</span>'
+      : att._custom
+        ? ''
+        : '<span class="admin-item-badge badge-official">Official</span>';
+    const canDelete = att._overridden || att._custom;
+    const deleteBtnHtml = canDelete
+      ? `<button class="delete-item-btn" data-delete title="${att._overridden ? 'Revert to official version' : 'Delete'}">✕</button>`
+      : '';
     row.innerHTML = `
-      <span class="admin-item-label">${escHtml(att.label)}</span>
+      <span class="admin-item-label">${att._custom ? '🔧 ' : ''}${escHtml(att.label)}</span>
+      ${badge}
       <span class="admin-item-meta">${(att.compatible_weapons || []).length} compatible weapon(s)</span>
       <button class="btn btn-secondary" data-edit>Edit</button>
-      <button class="delete-item-btn" data-delete title="Delete">✕</button>
+      ${deleteBtnHtml}
     `;
     row.querySelector('[data-edit]').addEventListener('click', () => renderAttachmentForm(att));
-    row.querySelector('[data-delete]').addEventListener('click', () => {
-      if (!confirm(`Delete custom attachment "${att.label}"?`)) return;
-      WeaponStore.deleteCustomAttachment(att.id);
-      renderCustomAttachmentsList();
-    });
+    const deleteBtn = row.querySelector('[data-delete]');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        const msg = att._overridden
+          ? `Revert "${att.label}" to its official version?`
+          : `Delete custom attachment "${att.label}"?`;
+        if (!confirm(msg)) return;
+        WeaponStore.deleteCustomAttachment(att.id);
+        renderAttachmentsList();
+      });
+    }
     wrap.appendChild(row);
   });
 }
@@ -434,6 +470,6 @@ function renderAttachmentForm(existingAttachment) {
     });
 
     container.innerHTML = '';
-    renderCustomAttachmentsList();
+    renderAttachmentsList();
   });
 }
