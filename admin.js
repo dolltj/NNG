@@ -243,6 +243,9 @@ function renderWeaponForm(existingWeapon) {
 
     const officialIds = (BASE_WEAPON_CONFIG.weapons || []).map(w => w.id);
     const customIds = WeaponStore.getCustomWeapons().map(w => w.id).filter(id => id !== existingWeapon?.id);
+    // Reusing existingWeapon.id here is what turns "Edit" on an Official row
+    // into an override (see getMergedConfig/_mergeList in weapon-store.js) —
+    // there's no separate "create override" action, this line IS it.
     const id = existingWeapon?.id || uniqueId(slugify(label), [...officialIds, ...customIds]);
 
     const tags = document.getElementById('w-tags').value.split(',').map(s => s.trim()).filter(Boolean);
@@ -453,6 +456,10 @@ function renderAttachmentForm(existingAttachment) {
 
     const officialIds = (BASE_WEAPON_CONFIG.attachments || []).map(a => a.id);
     const customIds = WeaponStore.getCustomAttachments().map(a => a.id).filter(id => id !== existingAttachment?.id);
+    // Reusing existingAttachment.id here is what turns "Edit" on an Official
+    // row into an override (see getMergedConfig/_mergeList in
+    // weapon-store.js) — there's no separate "create override" action,
+    // this line IS it.
     const id = existingAttachment?.id || uniqueId(slugify(label), [...officialIds, ...customIds]);
 
     const compatible_weapons = Array.from(document.getElementById('a-compatible').selectedOptions).map(o => o.value);
