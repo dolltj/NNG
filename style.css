@@ -1490,6 +1490,8 @@ textarea.field-input {
   border-bottom: 1px solid var(--border-subtle);
 }
 
+.admin-item-row:hover .delete-item-btn { opacity: 1; }
+
 .admin-item-label {
   flex: 1;
   font-weight: 600;
