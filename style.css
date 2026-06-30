@@ -1501,6 +1501,27 @@ textarea.field-input {
   color: var(--text-muted);
 }
 
+.admin-item-badge {
+  font-size: 0.6rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+}
+
+.badge-official {
+  color: var(--text-muted);
+  background: var(--bg-surface);
+}
+
+.badge-edited {
+  color: var(--gold);
+  background: var(--gold-glow);
+  border-color: var(--gold-dim);
+}
+
 .admin-action-row {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
