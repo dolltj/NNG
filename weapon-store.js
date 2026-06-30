@@ -64,17 +64,25 @@
     _save(data);
   }
 
+  function _mergeList(officialList, customList) {
+    const merged = (officialList || []).map(item => ({ ...item }));
+    const newItems = [];
+    customList.forEach(item => {
+      const idx = merged.findIndex(m => m.id === item.id);
+      if (idx >= 0) {
+        merged[idx] = { ...item, _overridden: true };
+      } else {
+        newItems.push({ ...item, _custom: true });
+      }
+    });
+    return [...merged, ...newItems];
+  }
+
   function getMergedConfig(baseConfig) {
     const custom = _load();
     return {
-      weapons: [
-        ...(baseConfig.weapons || []),
-        ...custom.weapons.map(w => ({ ...w, _custom: true }))
-      ],
-      attachments: [
-        ...(baseConfig.attachments || []),
-        ...custom.attachments.map(a => ({ ...a, _custom: true }))
-      ]
+      weapons: _mergeList(baseConfig.weapons, custom.weapons),
+      attachments: _mergeList(baseConfig.attachments, custom.attachments)
     };
   }
 
