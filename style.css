@@ -1518,7 +1518,7 @@ textarea.field-input {
 
 .badge-edited {
   color: var(--gold);
-  background: var(--gold-glow);
+  background: var(--bg-surface);
   border-color: var(--gold-dim);
 }
 
