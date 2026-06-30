@@ -137,7 +137,6 @@ function renderRoster() {
     <h1 class="roster-title">⚔ Character Vault</h1>
     <p class="roster-subtitle">${CONFIG.system} · Select or create a character</p>
     <div class="roster-grid" id="roster-grid"></div>
-    <a class="roster-admin-link" href="admin.html">⚙ Manage Weapons</a>
   `;
   const grid = document.getElementById('roster-grid');
 

@@ -185,19 +185,6 @@ body::before {
   margin-bottom: var(--space-xl);
 }
 
-.roster-admin-link {
-  display: block;
-  text-align: center;
-  margin-top: var(--space-lg);
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  text-decoration: none;
-}
-
-.roster-admin-link:hover {
-  color: var(--gold);
-}
-
 .roster-card {
   background: var(--bg-raised);
   border: 1px solid var(--border-mid);
