@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Builder for custom weapons and attachments for the NNG character sheet.">
-  <title>Weapon Admin — NNG Sheet</title>
+  <meta name="description" content="Builder for custom weapons, attachments, and perks for the NNG character sheet.">
+  <title>Config Admin — NNG Sheet</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,7 @@
   <div id="admin-screen">
     <header class="top-bar">
       <a class="top-bar-back" href="index.html">← Character Vault</a>
-      <h1 class="top-bar-title">Weapon &amp; Attachment Admin</h1>
+      <h1 class="top-bar-title">Config Admin</h1>
       <div class="top-bar-actions">
         <button class="btn btn-secondary" id="export-btn">↓ Export Custom Items</button>
       </div>
@@ -30,6 +30,11 @@
       <div id="attachments-list"></div>
       <button class="btn btn-primary mt-md" id="new-attachment-btn">＋ New Attachment</button>
       <div id="attachment-form-container"></div>
+
+      <div class="section-header mt-lg">Perks</div>
+      <div id="perks-list"></div>
+      <button class="btn btn-primary mt-md" id="new-perk-btn">＋ New Perk</button>
+      <div id="perk-form-container"></div>
     </main>
   </div>
 
