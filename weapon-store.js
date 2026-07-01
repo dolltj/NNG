@@ -1,10 +1,11 @@
 // =============================================
-// WEAPON STORE
-// Manages custom (player-authored) weapons and
-// attachments in localStorage, and merges them
-// with the base config/weapons.json dictionary
-// at runtime. Shared between index.html (the
-// character sheet) and admin.html (the builder).
+// WEAPON / PERK STORE
+// Manages custom (player-authored) weapons,
+// attachments, and perks in localStorage, and
+// merges them with the base config/*.json
+// dictionaries at runtime. Shared between
+// index.html (the character sheet) and
+// admin.html (the builder).
 // =============================================
 (function () {
   'use strict';
