@@ -1,8 +1,9 @@
 // =============================================
-// WEAPON ADMIN — builder UI for custom weapons
-// and attachments. Reads/writes via WeaponStore
-// (weapon-store.js). Self-contained: does not
-// depend on app.js, dice.js, or roll20-bridge.js.
+// CONFIG ADMIN — builder UI for custom weapons,
+// attachments, and perks. Reads/writes via
+// WeaponStore (weapon-store.js). Self-contained:
+// does not depend on app.js, dice.js, or
+// roll20-bridge.js.
 // =============================================
 
 'use strict';
@@ -47,7 +48,7 @@ function exportCustomItems() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'custom-weapons-export.json';
+  a.download = 'custom-config-export.json';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
