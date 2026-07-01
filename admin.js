@@ -8,17 +8,24 @@
 'use strict';
 
 let BASE_WEAPON_CONFIG = null;
+let BASE_PERK_CONFIG = null;
 
 window.addEventListener('DOMContentLoaded', async () => {
   const resp = await fetch('config/weapons.json');
   if (!resp.ok) throw new Error(`Failed to load config/weapons.json: ${resp.status}`);
   BASE_WEAPON_CONFIG = await resp.json();
 
+  const perkResp = await fetch('config/perks.json');
+  if (!perkResp.ok) throw new Error(`Failed to load config/perks.json: ${perkResp.status}`);
+  BASE_PERK_CONFIG = await perkResp.json();
+
   renderWeaponsList();
   renderAttachmentsList();
+  renderPerksList();
 
   document.getElementById('new-weapon-btn').addEventListener('click', () => renderWeaponForm(null));
   document.getElementById('new-attachment-btn').addEventListener('click', () => renderAttachmentForm(null));
+  document.getElementById('new-perk-btn').addEventListener('click', () => renderPerkForm(null));
   document.getElementById('export-btn').addEventListener('click', exportCustomItems);
 });
 
@@ -28,6 +35,10 @@ function getAllWeapons() {
 
 function getAllAttachments() {
   return WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG).attachments;
+}
+
+function getAllPerks() {
+  return WeaponStore.getPerksMergedConfig(BASE_PERK_CONFIG);
 }
 
 function exportCustomItems() {
@@ -478,5 +489,143 @@ function renderAttachmentForm(existingAttachment) {
 
     container.innerHTML = '';
     renderAttachmentsList();
+  });
+}
+
+function renderPerksList() {
+  const wrap = document.getElementById('perks-list');
+  wrap.innerHTML = '';
+  const perks = getAllPerks();
+  if (perks.length === 0) {
+    wrap.innerHTML = '<p style="color:var(--text-muted)">(none yet)</p>';
+    return;
+  }
+  perks.forEach(perk => {
+    const row = document.createElement('div');
+    row.className = 'admin-item-row';
+    const badge = perk._overridden
+      ? '<span class="admin-item-badge badge-edited">Edited</span>'
+      : perk._custom
+        ? ''
+        : '<span class="admin-item-badge badge-official">Official</span>';
+    const canDelete = perk._overridden || perk._custom;
+    const deleteBtnHtml = canDelete
+      ? `<button class="delete-item-btn" data-delete title="${perk._overridden ? 'Revert to official version' : 'Delete'}">✕</button>`
+      : '';
+    row.innerHTML = `
+      <span class="admin-item-label">${perk._custom ? '🔧 ' : ''}${escHtml(perk.name)}</span>
+      ${badge}
+      <span class="admin-item-meta">Lv ${perk.level}</span>
+      <button class="btn btn-secondary" data-edit>Edit</button>
+      ${deleteBtnHtml}
+    `;
+    row.querySelector('[data-edit]').addEventListener('click', () => renderPerkForm(perk));
+    const deleteBtn = row.querySelector('[data-delete]');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        const msg = perk._overridden
+          ? `Revert "${perk.name}" to its official version?`
+          : `Delete custom perk "${perk.name}"?`;
+        if (!confirm(msg)) return;
+        WeaponStore.deleteCustomPerk(perk.id);
+        renderPerksList();
+      });
+    }
+    wrap.appendChild(row);
+  });
+}
+
+function renderPerkForm(existingPerk) {
+  const container = document.getElementById('perk-form-container');
+  container.innerHTML = '';
+
+  const actionType = existingPerk?.action?.type || 'none';
+
+  const form = document.createElement('div');
+  form.className = 'admin-form';
+  form.innerHTML = `
+    <div class="char-info-grid">
+      <div class="field-group">
+        <label class="field-label">Name</label>
+        <input class="field-input" id="p-name" value="${escHtml(existingPerk?.name || '')}">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Level</label>
+        <input class="field-input" id="p-level" type="number" min="1" max="99" value="${existingPerk?.level ?? 1}">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Prerequisite</label>
+      <input class="field-input" id="p-prerequisite" value="${escHtml(existingPerk?.prerequisite || '')}">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Effect</label>
+      <textarea class="field-input" id="p-effect">${escHtml(existingPerk?.effect || '')}</textarea>
+    </div>
+    <div class="section-header mt-md">Granted Action (optional)</div>
+    <div class="field-group">
+      <label class="field-label">Type</label>
+      <select class="field-input" id="p-action-type">
+        <option value="none" ${actionType === 'none' ? 'selected' : ''}>None</option>
+        <option value="Action" ${actionType === 'Action' ? 'selected' : ''}>Action</option>
+        <option value="Reaction" ${actionType === 'Reaction' ? 'selected' : ''}>Reaction</option>
+        <option value="Quick Action" ${actionType === 'Quick Action' ? 'selected' : ''}>Quick Action</option>
+      </select>
+    </div>
+    <div id="p-action-fields">
+      <div class="field-group">
+        <label class="field-label">Label</label>
+        <input class="field-input" id="p-action-label" value="${escHtml(existingPerk?.action?.label || '')}">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Description</label>
+        <textarea class="field-input" id="p-action-text">${escHtml(existingPerk?.action?.text || '')}</textarea>
+      </div>
+    </div>
+    <div class="flex gap-sm mt-md">
+      <button class="btn btn-primary" id="p-save-btn">Save Perk</button>
+      <button class="btn btn-secondary" id="p-cancel-btn">Cancel</button>
+    </div>
+  `;
+  container.appendChild(form);
+
+  function updateActionVisibility() {
+    const show = document.getElementById('p-action-type').value !== 'none';
+    document.getElementById('p-action-fields').style.display = show ? '' : 'none';
+  }
+  document.getElementById('p-action-type').addEventListener('change', updateActionVisibility);
+  updateActionVisibility();
+
+  document.getElementById('p-cancel-btn').addEventListener('click', () => { container.innerHTML = ''; });
+
+  document.getElementById('p-save-btn').addEventListener('click', () => {
+    const name = document.getElementById('p-name').value.trim();
+    if (!name) { alert('Name is required.'); return; }
+
+    const officialIds = (BASE_PERK_CONFIG || []).map(p => p.id);
+    const customIds = WeaponStore.getCustomPerks().map(p => p.id).filter(id => id !== existingPerk?.id);
+    // Reusing existingPerk.id here is what turns "Edit" on an Official row
+    // into an override (see getPerksMergedConfig in weapon-store.js) —
+    // there's no separate "create override" action, this line IS it.
+    const id = existingPerk?.id || uniqueId(slugify(name), [...officialIds, ...customIds]);
+
+    const type = document.getElementById('p-action-type').value;
+    const action = type === 'none' ? null : {
+      type,
+      label: document.getElementById('p-action-label').value.trim(),
+      text: document.getElementById('p-action-text').value.trim()
+    };
+
+    WeaponStore.saveCustomPerk({
+      id,
+      name,
+      level: parseInt(document.getElementById('p-level').value) || 1,
+      prerequisite: document.getElementById('p-prerequisite').value.trim(),
+      effect: document.getElementById('p-effect').value.trim(),
+      action
+    });
+
+    container.innerHTML = '';
+    renderPerksList();
   });
 }
