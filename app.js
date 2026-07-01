@@ -28,6 +28,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   WEAPON_CONFIG = await loadConfig(WEAPONS_CONFIG_URL);
   WEAPON_CONFIG = window.WeaponStore.getMergedConfig(WEAPON_CONFIG);
   PERKS_CONFIG = await loadConfig(PERKS_CONFIG_URL);
+  PERKS_CONFIG = window.WeaponStore.getPerksMergedConfig(PERKS_CONFIG);
   loadAllCharacters();
   renderRoster();
 });
@@ -1324,7 +1325,7 @@ function buildPerksList(container, char) {
     </label>
     <select class="field-input" id="perk-dict-select" style="flex:1">
       <option value="">+ Add from Dictionary…</option>
-      ${eligiblePerks.map(p => `<option value="${p.id}">Lv ${p.level} — ${escHtml(p.name)}</option>`).join('')}
+      ${eligiblePerks.map(p => `<option value="${p.id}">Lv ${p.level} — ${p._custom ? '🔧 ' : ''}${escHtml(p.name)}</option>`).join('')}
     </select>
     <button class="btn btn-primary" id="perk-dict-add">Add</button>
   `;
