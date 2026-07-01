@@ -10,6 +10,40 @@
   'use strict';
 
   const STORAGE_KEY = 'ttrpg_custom_weapon_config';
+  const PERK_STORAGE_KEY = 'ttrpg_custom_perk_config';
+
+  function _loadPerks() {
+    try {
+      const raw = localStorage.getItem(PERK_STORAGE_KEY);
+      const parsed = JSON.parse(raw || 'null');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function _savePerks(perks) {
+    localStorage.setItem(PERK_STORAGE_KEY, JSON.stringify(perks));
+  }
+
+  function getCustomPerks() {
+    return _loadPerks();
+  }
+
+  function saveCustomPerk(perk) {
+    const perks = _loadPerks();
+    const idx = perks.findIndex(p => p.id === perk.id);
+    if (idx >= 0) perks[idx] = perk; else perks.push(perk);
+    _savePerks(perks);
+  }
+
+  function deleteCustomPerk(id) {
+    _savePerks(_loadPerks().filter(p => p.id !== id));
+  }
+
+  function getPerksMergedConfig(basePerks) {
+    return _mergeList(basePerks, _loadPerks());
+  }
 
   function _load() {
     try {
@@ -96,7 +130,8 @@
   }
 
   function exportAll() {
-    return _load();
+    const wa = _load();
+    return { weapons: wa.weapons, attachments: wa.attachments, perks: _loadPerks() };
   }
 
   window.WeaponStore = {
@@ -107,6 +142,10 @@
     deleteCustomWeapon,
     deleteCustomAttachment,
     getMergedConfig,
+    getCustomPerks,
+    saveCustomPerk,
+    deleteCustomPerk,
+    getPerksMergedConfig,
     exportAll
   };
 })();
