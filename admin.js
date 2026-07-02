@@ -72,6 +72,9 @@ function uniqueId(baseId, existingIds) {
 function buildActionRowForm(action = {}) {
   const row = document.createElement('div');
   row.className = 'admin-action-row';
+  // Existing actions keep their id even when relabeled — attachment effects
+  // (action_hit_bonus / action_save_dv_bonus) target actions by id.
+  const existingId = action.id || null;
 
   const type = action.is_reload ? 'reload'
     : action.burst_fire ? 'burst'
@@ -121,10 +124,10 @@ function buildActionRowForm(action = {}) {
     const t = get('type').value;
     const label = get('label').value.trim();
     if (t === 'reload') {
-      return { id: slugify(label), label, is_reload: true };
+      return { id: existingId || slugify(label), label, is_reload: true };
     }
     const a = {
-      id: slugify(label),
+      id: existingId || slugify(label),
       label,
       range: parseInt(get('range').value) || 0,
       damage: get('damage').value.trim() || '1d4'
@@ -243,6 +246,14 @@ function renderWeaponForm(existingWeapon) {
     const actionRows = Array.from(actionsList.children);
     if (actionRows.length === 0) { alert('At least one action is required.'); return; }
     const actions = actionRows.map(row => row.readAction());
+    const seen = new Set();
+    for (const a of actions) {
+      if (seen.has(a.id)) {
+        alert(`Two actions resolve to the same id ("${a.id}") — give them different labels.`);
+        return;
+      }
+      seen.add(a.id);
+    }
 
     const officialIds = (BASE_WEAPON_CONFIG.weapons || []).map(w => w.id);
     const customIds = WeaponStore.getCustomWeapons().map(w => w.id).filter(id => id !== existingWeapon?.id);
