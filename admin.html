@@ -15,7 +15,11 @@
     <header class="top-bar">
       <a class="top-bar-back" href="index.html">← Character Vault</a>
       <h1 class="top-bar-title">Config Admin</h1>
-      <div class="top-bar-actions">
+      <div class="top-bar-actions" id="auth-bar">
+        <input class="field-input" id="auth-email" type="email" placeholder="GM email" style="width:180px">
+        <input class="field-input" id="auth-password" type="password" placeholder="Password" style="width:140px">
+        <button class="btn btn-secondary" id="sign-in-btn">Sign In</button>
+        <button class="btn btn-primary" id="publish-btn" style="display:none">⬆ Publish to Everyone</button>
         <button class="btn btn-secondary" id="export-btn">↓ Export Custom Items</button>
       </div>
     </header>
@@ -38,7 +42,10 @@
     </main>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="util.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="remote-config.js"></script>
   <script src="weapon-store.js"></script>
   <script src="admin.js"></script>
 

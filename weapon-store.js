@@ -99,6 +99,13 @@
     _save(data);
   }
 
+  /** Drop all local drafts — called after a successful publish, when the
+   *  drafts have become the canonical config. */
+  function clearAllCustom() {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PERK_STORAGE_KEY);
+  }
+
   // Deep-clones via JSON round-trip (all weapon/attachment data is plain
   // JSON) so the merged result never shares nested array/object references
   // (actions, effects, tags, ...) with baseConfig or the custom store —
@@ -147,6 +154,7 @@
     saveCustomPerk,
     deleteCustomPerk,
     getPerksMergedConfig,
-    exportAll
+    exportAll,
+    clearAllCustom
   };
 })();

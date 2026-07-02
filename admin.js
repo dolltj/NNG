@@ -11,14 +11,13 @@
 let BASE_WEAPON_CONFIG = null;
 let BASE_PERK_CONFIG = null;
 
-window.addEventListener('DOMContentLoaded', async () => {
-  const resp = await fetch('config/weapons.json');
-  if (!resp.ok) throw new Error(`Failed to load config/weapons.json: ${resp.status}`);
-  BASE_WEAPON_CONFIG = await resp.json();
+const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
-  const perkResp = await fetch('config/perks.json');
-  if (!perkResp.ok) throw new Error(`Failed to load config/perks.json: ${perkResp.status}`);
-  BASE_PERK_CONFIG = await perkResp.json();
+window.addEventListener('DOMContentLoaded', async () => {
+  [BASE_WEAPON_CONFIG, BASE_PERK_CONFIG] = await Promise.all([
+    window.RemoteConfig.loadConfigWithFallback('weapons', 'config/weapons.json'),
+    window.RemoteConfig.loadConfigWithFallback('perks', 'config/perks.json')
+  ]);
 
   renderWeaponsList();
   renderAttachmentsList();
@@ -28,6 +27,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('new-attachment-btn').addEventListener('click', () => renderAttachmentForm(null));
   document.getElementById('new-perk-btn').addEventListener('click', () => renderPerkForm(null));
   document.getElementById('export-btn').addEventListener('click', exportCustomItems);
+  document.getElementById('sign-in-btn').addEventListener('click', signIn);
+  document.getElementById('publish-btn').addEventListener('click', publishConfigs);
+
+  // supabase-js persists sessions in localStorage — restore silently.
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) showSignedIn(session.user.email);
 });
 
 function getAllWeapons() {
@@ -53,6 +58,48 @@ function exportCustomItems() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function showSignedIn(email) {
+  document.getElementById('auth-email').style.display = 'none';
+  document.getElementById('auth-password').style.display = 'none';
+  const btn = document.getElementById('sign-in-btn');
+  btn.textContent = email;
+  btn.disabled = true;
+  document.getElementById('publish-btn').style.display = '';
+}
+
+async function signIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) { alert(`Sign-in failed: ${error.message}`); return; }
+  showSignedIn(data.user.email);
+}
+
+async function publishConfigs() {
+  if (!confirm('Publish the current weapon, attachment, and perk lists as the official config for all players?')) return;
+
+  const stripFlags = list => list.map(({ _custom, _overridden, ...item }) => item);
+  const merged = WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG);
+  const weaponsData = { weapons: stripFlags(merged.weapons), attachments: stripFlags(merged.attachments) };
+  const perksData = stripFlags(WeaponStore.getPerksMergedConfig(BASE_PERK_CONFIG));
+
+  const now = new Date().toISOString();
+  const { error } = await sb.from('configs').upsert([
+    { key: 'weapons', data: weaponsData, updated_at: now },
+    { key: 'perks',   data: perksData,   updated_at: now }
+  ]);
+  if (error) { alert(`Publish failed: ${error.message}`); return; }
+
+  // Drafts are canon now — clear them and rebase the lists on the new canon.
+  WeaponStore.clearAllCustom();
+  BASE_WEAPON_CONFIG = weaponsData;
+  BASE_PERK_CONFIG = perksData;
+  renderWeaponsList();
+  renderAttachmentsList();
+  renderPerksList();
+  alert('Published. Players get the update next time they load the sheet.');
 }
 
 function slugify(str) {
