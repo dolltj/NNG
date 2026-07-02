@@ -500,13 +500,13 @@ function buildResourceCard(resDef, char) {
   const barWrap = card.querySelector('.resource-bar-wrap');
   if (barWrap) {
     barWrap.addEventListener('click', e => {
+      const char = getChar();
+      const maxVal2 = getResourceMax(resDef, char);
+      if (!maxVal2) return; // no max → a click position maps to nothing
       const rect = barWrap.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const char = getChar();
       const res2 = char.resources[resDef.id];
-      const maxVal2 = getResourceMax(resDef, char);
-      const newVal = Math.round(pct * (maxVal2 || 0));
-      res2.current = Math.max(0, Math.min(maxVal2 ?? newVal, newVal));
+      res2.current = Math.max(0, Math.min(maxVal2, Math.round(pct * maxVal2)));
       const display = document.getElementById(`res-val-${resDef.id}`);
       if (display) display.textContent = res2.current;
       updateResourceDisplay(resDef.id, resDef);
