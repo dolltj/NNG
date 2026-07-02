@@ -761,6 +761,13 @@ function renderWeaponsList(char) {
 }
 
 function buildWeaponCard(weaponInst, resolved) {
+  // Ammo tracks the *resolved* magazine — attachments and admin edits can
+  // add or remove a magazine after the weapon was added to the sheet.
+  if (resolved.magazine_size != null && !weaponInst.ammo) {
+    weaponInst.ammo = { current: resolved.magazine_size };
+  } else if (resolved.magazine_size == null && weaponInst.ammo) {
+    weaponInst.ammo = null;
+  }
   const card = document.createElement('div');
   card.className = 'weapon-card';
 
@@ -799,7 +806,8 @@ function buildWeaponCard(weaponInst, resolved) {
   const actionsWrap = document.createElement('div');
   actionsWrap.className = 'weapon-action-rows';
   resolved.actions.forEach(action => {
-    actionsWrap.appendChild(buildActionRow(weaponInst, resolved, action));
+    const actionRow = buildActionRow(weaponInst, resolved, action);
+    if (actionRow) actionsWrap.appendChild(actionRow);
   });
   card.appendChild(actionsWrap);
 
@@ -877,6 +885,7 @@ function buildActionRow(weaponInst, resolved, action) {
   row.className = 'weapon-action-row';
 
   if (action.is_reload) {
+    if (resolved.magazine_size == null) return null; // no magazine → no reload row
     row.innerHTML = `
       <span class="weapon-action-label">${escHtml(action.label)}</span>
       <button class="btn btn-secondary weapon-reload-btn">Reload</button>
