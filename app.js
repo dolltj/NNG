@@ -464,7 +464,7 @@ function renderTabAbilities(char) {
 
 function buildResourceCard(resDef, char) {
   const res = char.resources[resDef.id] || { current: 0, max: resDef.default_max ?? 0 };
-  const maxVal = resDef.derived_max ? deriveMaxHP(char) : res.max;
+  const maxVal = getResourceMax(resDef, char);
   const card = document.createElement('div');
   card.className = 'resource-card';
   card.id = `res-card-${resDef.id}`;
@@ -504,7 +504,7 @@ function buildResourceCard(resDef, char) {
       const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       const char = getChar();
       const res2 = char.resources[resDef.id];
-      const maxVal2 = resDef.derived_max ? deriveMaxHP(char) : res2.max;
+      const maxVal2 = getResourceMax(resDef, char);
       const newVal = Math.round(pct * (maxVal2 || 0));
       res2.current = Math.max(0, Math.min(maxVal2 ?? newVal, newVal));
       const display = document.getElementById(`res-val-${resDef.id}`);
@@ -551,7 +551,7 @@ function commitResourceEdit(resId, input, display) {
 function adjustResource(resId, delta, resDef) {
   const char = getChar();
   const res = char.resources[resId];
-  const maxVal = resDef.derived_max ? deriveMaxHP(char) : res.max;
+  const maxVal = getResourceMax(resDef, char);
   let newVal = (res.current || 0) + delta;
   if (maxVal != null) newVal = Math.min(newVal, maxVal);
   newVal = Math.max(0, newVal);
@@ -565,7 +565,7 @@ function adjustResource(resId, delta, resDef) {
 function updateResourceDisplay(resId, resDef) {
   const char = getChar();
   const res  = char.resources[resId];
-  const maxVal = resDef.derived_max ? deriveMaxHP(char) : res.max;
+  const maxVal = getResourceMax(resDef, char);
   const bar  = document.getElementById(`res-bar-${resId}`);
   if (bar) bar.style.width = calcBarPct(res.current, maxVal) + '%';
   const card = document.getElementById(`res-card-${resId}`);

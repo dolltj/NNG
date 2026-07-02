@@ -124,6 +124,16 @@ function deriveCarryingCapacity(character) {
 }
 
 /**
+ * A tracked resource's effective max: the derived HP formula for
+ * derived_max resources, otherwise the character's stored max
+ * (null when the character has no entry / no max set).
+ */
+function getResourceMax(resDef, character) {
+  if (resDef.derived_max) return deriveMaxHP(character);
+  return character.resources?.[resDef.id]?.max ?? null;
+}
+
+/**
  * Build a "2d10 + modifier" test formula string.
  */
 function buildTestFormula(modifier) {
@@ -173,6 +183,6 @@ if (typeof module !== 'undefined') {
   module.exports = {
     rollDie, parseDiceToken, evaluateDiceExpression,
     deriveMaxHP, deriveInjuryThreshold, deriveRecoveryRate,
-    deriveCarryingCapacity, buildTestFormula, buildAdvantageFormula, formatMod
+    deriveCarryingCapacity, getResourceMax, buildTestFormula, buildAdvantageFormula, formatMod
   };
 }
