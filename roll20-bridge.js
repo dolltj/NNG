@@ -84,20 +84,12 @@
       <div class="roll-log-title">Sent Rolls</div>
       ${_rollLog.map(r => `
         <div class="roll-log-entry">
-          <span class="roll-log-formula">${_escapeHtml(r.formula)}</span>
-          <span class="roll-log-label">${_escapeHtml(r.label)}</span>
+          <span class="roll-log-formula">${window.escHtml(r.formula)}</span>
+          <span class="roll-log-label">${window.escHtml(r.label)}</span>
         </div>
       `).join('')}
     `;
     panel.classList.add('visible');
-  }
-
-  function _escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 
   // -----------------------------------------------

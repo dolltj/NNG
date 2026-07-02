@@ -70,7 +70,8 @@
   <!-- Toast container (injected by roll20-bridge.js) -->
   <div id="toast-container"></div>
 
-  <!-- Scripts (order matters: dice → bridge → weapon-store → app) -->
+  <!-- Scripts (order matters: util → dice → bridge → weapon-store → app) -->
+  <script src="util.js"></script>
   <script src="dice.js"></script>
   <script src="roll20-bridge.js"></script>
   <script src="weapon-store.js"></script>
