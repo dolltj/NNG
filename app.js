@@ -55,7 +55,18 @@ function loadAllCharacters() {
 }
 
 function saveAllCharacters() {
-  localStorage.setItem(STORAGE_CHARS_KEY, JSON.stringify(CHARACTERS));
+  try {
+    localStorage.setItem(STORAGE_CHARS_KEY, JSON.stringify(CHARACTERS));
+    return true;
+  } catch (err) {
+    console.error('Failed to save characters:', err);
+    const indicator = document.getElementById('save-indicator');
+    if (indicator) {
+      indicator.className = 'save-indicator error';
+      indicator.querySelector('.save-dot-label').textContent = 'Save FAILED — storage full?';
+    }
+    return false;
+  }
 }
 
 function scheduleSave() {
@@ -63,7 +74,7 @@ function scheduleSave() {
   if (indicator) { indicator.className = 'save-indicator saving'; indicator.querySelector('.save-dot-label').textContent = 'Saving…'; }
   clearTimeout(SAVE_TIMER);
   SAVE_TIMER = setTimeout(() => {
-    saveAllCharacters();
+    if (!saveAllCharacters()) return;
     if (indicator) {
       indicator.className = 'save-indicator saved';
       indicator.querySelector('.save-dot-label').textContent = 'Saved';

@@ -374,6 +374,8 @@ body::before {
 
 .save-indicator.saved { color: #50c878; }
 .save-indicator.saving { color: var(--gold); }
+.save-indicator.error .save-dot { background: #e74c3c; }
+.save-indicator.error .save-dot-label { color: #e74c3c; }
 
 .save-dot {
   width: 6px; height: 6px;
