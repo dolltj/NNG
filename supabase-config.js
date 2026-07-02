@@ -4,5 +4,7 @@
 // what Row-Level Security allows (read configs).
 // Writes require a signed-in session (admin page).
 // =============================================
-window.SUPABASE_URL = 'REPLACE_WITH_PROJECT_URL'; // e.g. https://abcdefgh.supabase.co
+// Placeholder must stay a valid-format URL: supabase-js createClient()
+// throws on malformed URLs at script load, which would kill admin.html.
+window.SUPABASE_URL = 'https://placeholder-project.supabase.co'; // REPLACE with real project URL
 window.SUPABASE_ANON_KEY = 'REPLACE_WITH_ANON_KEY';
