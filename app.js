@@ -31,7 +31,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   PERKS_CONFIG = window.WeaponStore.getPerksMergedConfig(PERKS_CONFIG);
   loadAllCharacters();
   renderTabNav(); // static buttons in index.html — wire exactly once
-  renderRoster();
+  const lastId = localStorage.getItem(STORAGE_ACTIVE_KEY);
+  if (lastId && CHARACTERS[lastId]) {
+    openCharacter(lastId); // resume where the player left off
+  } else {
+    renderRoster();
+  }
 });
 
 // -----------------------------------------------
@@ -190,6 +195,8 @@ function renderRoster() {
 }
 
 function showRoster() {
+  ACTIVE_ID = null;
+  localStorage.removeItem(STORAGE_ACTIVE_KEY);
   document.getElementById('roster-screen').style.display = 'flex';
   document.getElementById('app-screen').classList.remove('active');
   renderRoster();
