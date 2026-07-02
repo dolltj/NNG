@@ -24,11 +24,14 @@ const PERKS_CONFIG_URL    = 'config/perks.json';
 // BOOTSTRAP
 // -----------------------------------------------
 window.addEventListener('DOMContentLoaded', async () => {
-  CONFIG = await loadConfig(CONFIG_URL);
-  WEAPON_CONFIG = await loadConfig(WEAPONS_CONFIG_URL);
-  WEAPON_CONFIG = window.WeaponStore.getMergedConfig(WEAPON_CONFIG);
-  PERKS_CONFIG = await loadConfig(PERKS_CONFIG_URL);
-  PERKS_CONFIG = window.WeaponStore.getPerksMergedConfig(PERKS_CONFIG);
+  const [nng, weapons, perks] = await Promise.all([
+    loadConfig(CONFIG_URL), // system config stays bundled — schema changes need code changes anyway
+    window.RemoteConfig.loadConfigWithFallback('weapons', WEAPONS_CONFIG_URL),
+    window.RemoteConfig.loadConfigWithFallback('perks', PERKS_CONFIG_URL)
+  ]);
+  CONFIG = nng;
+  WEAPON_CONFIG = window.WeaponStore.getMergedConfig(weapons);
+  PERKS_CONFIG = window.WeaponStore.getPerksMergedConfig(perks);
   loadAllCharacters();
   renderTabNav(); // static buttons in index.html — wire exactly once
   const lastId = localStorage.getItem(STORAGE_ACTIVE_KEY);
