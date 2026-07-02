@@ -1178,9 +1178,32 @@ function importCharacter() {
   input.addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
-    const text = await file.text();
-    const char = JSON.parse(text);
-    char.id = char.id || ('char_' + Date.now());
+
+    let raw;
+    try {
+      raw = JSON.parse(await file.text());
+    } catch {
+      alert(`"${file.name}" is not valid JSON.`);
+      return;
+    }
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)
+        || typeof raw.name !== 'string' || typeof raw.core_stats !== 'object') {
+      alert(`"${file.name}" doesn't look like a character export from this sheet.`);
+      return;
+    }
+
+    // Merge onto a fresh default character so fields added to the schema
+    // after this file was exported (origin_perk, show_all_perks, new
+    // resources/skills, ...) get defaults instead of crashing the sheet.
+    const id = (typeof raw.id === 'string' && raw.id) ? raw.id : ('char_' + Date.now());
+    const base = buildDefaultCharacter(id);
+    const char = { ...base, ...raw, id };
+    char.core_stats  = { ...base.core_stats,  ...(raw.core_stats  || {}) };
+    char.resources   = { ...base.resources,   ...(raw.resources   || {}) };
+    char.skills      = { ...base.skills,      ...(raw.skills      || {}) };
+    char.armor       = { ...base.armor,       ...(raw.armor       || {}) };
+    char.origin_perk = { ...base.origin_perk, ...(raw.origin_perk || {}) };
+
     CHARACTERS[char.id] = char;
     saveAllCharacters();
     openCharacter(char.id);
