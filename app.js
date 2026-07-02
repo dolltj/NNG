@@ -30,6 +30,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   PERKS_CONFIG = await loadConfig(PERKS_CONFIG_URL);
   PERKS_CONFIG = window.WeaponStore.getPerksMergedConfig(PERKS_CONFIG);
   loadAllCharacters();
+  renderTabNav(); // static buttons in index.html — wire exactly once
   renderRoster();
 });
 
@@ -288,7 +289,6 @@ function resolveWeapon(weaponInstance) {
 function renderSheet() {
   const char = getChar();
   renderTopBar(char);
-  renderTabNav();
   renderTabInfo(char);
   renderTabAbilities(char);
   renderTabCombat(char);
