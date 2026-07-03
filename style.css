@@ -1138,6 +1138,7 @@ textarea.field-input {
 }
 
 .equipment-item:hover .delete-item-btn { opacity: 1; }
+.campaign-block-header .delete-item-btn { opacity: 1; } /* rare, deliberate action — always visible */
 .delete-item-btn:hover { color: var(--color-hp); }
 
 /* =============================================
