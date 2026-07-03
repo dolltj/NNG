@@ -11,7 +11,11 @@
 let BASE_WEAPON_CONFIG = null;
 let BASE_PERK_CONFIG = null;
 
-const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+// The CDN SDK may be unreachable (offline, blockers). Local drafting works
+// without it; only sign-in/publish need it, and they alert if it's missing.
+const sb = (typeof supabase !== 'undefined')
+  ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
+  : null;
 
 window.addEventListener('DOMContentLoaded', async () => {
   [BASE_WEAPON_CONFIG, BASE_PERK_CONFIG] = await Promise.all([
@@ -31,8 +35,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('publish-btn').addEventListener('click', publishConfigs);
 
   // supabase-js persists sessions in localStorage — restore silently.
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) showSignedIn(session.user.email);
+  if (sb) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) showSignedIn(session.user.email);
+  }
 });
 
 function getAllWeapons() {
@@ -70,6 +76,7 @@ function showSignedIn(email) {
 }
 
 async function signIn() {
+  if (!sb) { alert('Supabase SDK failed to load — check your connection and reload.'); return; }
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
@@ -78,6 +85,7 @@ async function signIn() {
 }
 
 async function publishConfigs() {
+  if (!sb) { alert('Supabase SDK failed to load — check your connection and reload.'); return; }
   if (!confirm('Publish the current weapon, attachment, and perk lists as the official config for all players?')) return;
 
   const stripFlags = list => list.map(({ _custom, _overridden, ...item }) => item);
