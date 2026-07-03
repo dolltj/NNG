@@ -16,6 +16,15 @@ The official weapon/attachment/perk lists live in a central Supabase table, not 
 
 **For players:** nothing to do. You can also add personal homebrew via your own browser's admin page without signing in; unpublished items stay local to your browser.
 
+## Campaigns
+
+Signed-in players can put characters into shared campaigns. Everyone with an account sees every campaign's sheets; only the owning player (and the campaign's GM) can edit a sheet — others get a read-only view with a Refresh button.
+
+- Accounts are created by the GM in the Supabase dashboard (there is no self-signup).
+- Sign in from the roster screen's Campaigns section.
+- "Move to campaign…" on a local character uploads it; it then lives in the cloud and autosaves there. Export/Import still works for backups.
+- Characters not in a campaign stay local to your browser, as always.
+
 ## Development
 
 No build step — plain HTML/JS/CSS. Run the unit tests with `node --test` (Node 18+) from the repo root.
