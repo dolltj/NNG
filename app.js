@@ -233,6 +233,7 @@ function renderRoster() {
 
 function showRoster() {
   ACTIVE_ID = null;
+  VIEW_ONLY = false;
   localStorage.removeItem(STORAGE_ACTIVE_KEY);
   document.getElementById('roster-screen').style.display = 'flex';
   document.getElementById('app-screen').classList.remove('active');
@@ -432,10 +433,12 @@ function openMoveModal(charId) {
 // -----------------------------------------------
 function openCharacter(id) {
   ACTIVE_ID = id;
+  VIEW_ONLY = !canEditCharacter(getChar(), CURRENT_USER && CURRENT_USER.id, CAMPAIGNS_BY_ID);
   localStorage.setItem(STORAGE_ACTIVE_KEY, id);
   document.getElementById('roster-screen').style.display = 'none';
   document.getElementById('app-screen').classList.add('active');
   renderSheet();
+  applyViewOnlyMode();
   switchTab('tab-info');
 }
 
@@ -527,6 +530,41 @@ function renderSheet() {
   renderTabPsycasts(char);
   renderTabEquipment(char);
   renderTabNotes(char);
+}
+
+// -----------------------------------------------
+// VIEW-ONLY MODE
+// Someone else's campaign sheet: render normally,
+// then disable every control except tab navigation
+// and the back button, and offer a Refresh that
+// re-pulls their latest save. scheduleSave is also
+// VIEW_ONLY-guarded; RLS enforces it server-side.
+// -----------------------------------------------
+function applyViewOnlyMode() {
+  const existing = document.getElementById('view-refresh-btn');
+  if (existing) existing.remove();
+  if (!VIEW_ONLY) return;
+
+  document.querySelectorAll('#app-screen input, #app-screen select, #app-screen textarea, #app-screen button')
+    .forEach(el => {
+      if (el.classList.contains('tab-btn') || el.classList.contains('top-bar-back')) return;
+      el.disabled = true;
+    });
+
+  const actions = document.querySelector('.top-bar-actions');
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-secondary';
+  btn.id = 'view-refresh-btn';
+  btn.textContent = '↻ Refresh';
+  btn.addEventListener('click', async () => {
+    try {
+      const row = await window.CampaignStore.fetchCharacter(ACTIVE_ID);
+      CHARACTERS[ACTIVE_ID] = cloudRowToChar(row);
+      renderSheet();
+      applyViewOnlyMode();
+    } catch (err) { alert(`Refresh failed: ${err.message}`); }
+  });
+  actions.prepend(btn);
 }
 
 // -----------------------------------------------
