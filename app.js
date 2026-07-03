@@ -316,11 +316,15 @@ async function renderCampaignArea() {
   });
 
   const blocks = document.getElementById('campaign-blocks');
+  if (CAMPAIGNS.length === 0) {
+    blocks.innerHTML = '<p class="campaign-note">No campaigns yet — create one below.</p>';
+  }
   CAMPAIGNS.forEach(campaign => {
     blocks.appendChild(buildCampaignBlock(campaign, characters.filter(r => r.campaign_id === campaign.id)));
   });
-  if (CAMPAIGNS.length === 0) {
-    blocks.innerHTML = '<p class="campaign-note">No campaigns yet — create one below.</p>';
+  const orphans = characters.filter(r => !r.campaign_id);
+  if (orphans.length > 0) {
+    blocks.appendChild(buildOrphanBlock(orphans));
   }
 
   addMoveButtonsToLocalCards();
@@ -335,9 +339,20 @@ function buildCampaignBlock(campaign, rows) {
   block.className = 'campaign-block';
   const isGM = campaign.gm_id === CURRENT_USER.id;
   block.innerHTML = `
-    <div class="campaign-block-header">${escHtml(campaign.name)}${isGM ? ' <span class="admin-item-badge badge-official">GM</span>' : ''}</div>
+    <div class="campaign-block-header">${escHtml(campaign.name)}${isGM
+      ? ' <span class="admin-item-badge badge-official">GM</span> <button class="delete-item-btn" data-del-campaign title="Delete campaign (characters are kept)">✕</button>'
+      : ''}</div>
     <div class="roster-grid"></div>`;
   const grid = block.querySelector('.roster-grid');
+
+  const delCampaignBtn = block.querySelector('[data-del-campaign]');
+  if (delCampaignBtn) delCampaignBtn.addEventListener('click', async () => {
+    if (!confirm(`Delete campaign "${campaign.name}"?\n\nIts characters are NOT deleted — they move to "Not in a campaign", where their owners can re-home them.`)) return;
+    try {
+      await window.CampaignStore.deleteCampaign(campaign.id);
+      renderCampaignArea();
+    } catch (err) { alert(`Couldn't delete campaign: ${err.message}`); }
+  });
 
   rows.forEach(row => {
     const char = cloudRowToChar(row);
@@ -383,6 +398,63 @@ function buildCampaignBlock(campaign, rows) {
     else alert('Could not create the character in the campaign.');
   });
   grid.appendChild(newBtn);
+  return block;
+}
+
+// Characters whose campaign was deleted: still cloud-owned, editable only by
+// their owner (canEditCharacter treats a missing campaign as owner-only,
+// mirroring RLS), re-homeable via the same move modal local cards use.
+function buildOrphanBlock(rows) {
+  const block = document.createElement('div');
+  block.className = 'campaign-block';
+  block.innerHTML = `
+    <div class="campaign-block-header">Not in a campaign</div>
+    <div class="roster-grid"></div>`;
+  const grid = block.querySelector('.roster-grid');
+
+  rows.forEach(row => {
+    const char = cloudRowToChar(row);
+    const mine = row.owner_id === CURRENT_USER.id;
+    const card = document.createElement('div');
+    card.className = 'roster-card' + (mine ? '' : ' roster-card-readonly');
+    card.innerHTML = `
+      ${mine ? `<button class="roster-card-delete" title="Delete character">✕</button>` : ''}
+      <div class="roster-card-name">${escHtml(char.name)}</div>
+      <div class="roster-card-info">
+        <span>${escHtml(char.player_name || (mine ? 'you' : 'party member'))}</span>
+        <span>Lv ${char.level}</span>
+        ${mine ? '' : '<span title="View only">👁</span>'}
+      </div>`;
+    card.addEventListener('click', e => {
+      if (e.target.matches('.roster-card-delete')) return;
+      CHARACTERS[char.id] = char;
+      openCharacter(char.id);
+    });
+    if (mine) {
+      card.querySelector('.roster-card-delete').addEventListener('click', async e => {
+        e.stopPropagation();
+        if (!confirm(`Delete "${char.name}" permanently? (Export it first if you want a copy.)`)) return;
+        try {
+          await window.CampaignStore.deleteCharacter(char.id);
+          delete CHARACTERS[char.id];
+          renderCampaignArea();
+        } catch (err) { alert(`Couldn't delete: ${err.message}`); }
+      });
+      if (CAMPAIGNS.length > 0) {
+        const move = document.createElement('button');
+        move.className = 'btn btn-secondary roster-card-move';
+        move.textContent = '☁ Move to campaign…';
+        move.addEventListener('click', e => {
+          e.stopPropagation();
+          CHARACTERS[char.id] = char;
+          openMoveModal(char.id);
+        });
+        card.appendChild(move);
+      }
+    }
+    grid.appendChild(card);
+  });
+
   return block;
 }
 

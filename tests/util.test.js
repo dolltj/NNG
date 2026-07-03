@@ -34,6 +34,13 @@ test('canEditCharacter: campaign GM can edit any sheet in their campaign', () =>
   assert.strictEqual(canEditCharacter(char, 'gm-9', {}), false);
 });
 
+test('canEditCharacter: orphaned characters (deleted campaign) are owner-only', () => {
+  const orphan = { _cloud: { campaign_id: null, owner_id: 'user-1' } };
+  const campaignsById = { c1: { id: 'c1', gm_id: 'gm-9' } };
+  assert.strictEqual(canEditCharacter(orphan, 'user-1', campaignsById), true);
+  assert.strictEqual(canEditCharacter(orphan, 'gm-9', campaignsById), false, 'ex-GM loses edit rights');
+});
+
 test('stripCloudMeta removes _cloud and nothing else', () => {
   const char = { id: 'x', name: 'A', _cloud: { campaign_id: 'c1', owner_id: 'u1' } };
   assert.deepStrictEqual(stripCloudMeta(char), { id: 'x', name: 'A' });

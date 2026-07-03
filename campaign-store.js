@@ -49,6 +49,13 @@
     return data;
   }
 
+  /** RLS restricts this to the campaign's GM; the FK sets orphaned
+   *  characters' campaign_id to null rather than deleting them. */
+  async function deleteCampaign(id) {
+    const { error } = await _need().from('campaigns').delete().eq('id', id);
+    if (error) throw error;
+  }
+
   async function listCharacters() {
     const { data, error } = await _need().from('characters').select('id,campaign_id,owner_id,data');
     if (error) throw error;
@@ -82,7 +89,7 @@
   window.CampaignStore = {
     available: !!sb,
     getSession, signIn, signOut,
-    listCampaigns, createCampaign,
+    listCampaigns, createCampaign, deleteCampaign,
     listCharacters, fetchCharacter, upsertCharacter, deleteCharacter
   };
 })();
