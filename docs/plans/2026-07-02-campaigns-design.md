@@ -33,7 +33,7 @@ create table public.characters (
 
 RLS (both tables `to authenticated` only — nothing readable anonymously):
 - `campaigns`: select for all authenticated; insert with check `gm_id = auth.uid()`; update/delete only by the GM (`gm_id = auth.uid()`).
-- `characters`: select for all authenticated; insert with check `owner_id = auth.uid()`; update/delete when `owner_id = auth.uid()` **or** the caller is the campaign's GM (`exists (select 1 from campaigns c where c.id = campaign_id and c.gm_id = auth.uid())`).
+- `characters`: select for all authenticated; insert/update/delete when `owner_id = auth.uid()` **or** the caller is the campaign's GM (`exists (select 1 from campaigns c where c.id = campaign_id and c.gm_id = auth.uid())`). Insert must include the GM clause even though GMs "only update": the app writes via upsert, and Postgres evaluates INSERT policies on upserts even when the row already exists — an owner-only insert policy blocks GM edits outright (found live, 2026-07-02).
 
 Display names for owners come from a `display_name` in the character's jsonb (`player_name` already exists on the sheet) — no profile table.
 
