@@ -193,8 +193,9 @@ function renderRoster() {
   `;
   const grid = document.getElementById('roster-grid');
 
-  // Existing characters
-  Object.values(CHARACTERS).forEach(char => {
+  // Existing local characters (cloud characters opened this session are in
+  // CHARACTERS too, but they belong to the campaign grids, not this one)
+  Object.values(CHARACTERS).filter(c => !c._cloud).forEach(char => {
     const card = document.createElement('div');
     card.className = 'roster-card';
     card.innerHTML = `
@@ -246,6 +247,9 @@ function showRoster() {
 async function renderCampaignArea() {
   const area = document.getElementById('campaign-area');
   if (!area) return;
+  // renderRoster also fires while the sheet is open (e.g. name edits update
+  // the roster behind it) — don't refetch campaigns invisibly for those.
+  if (document.getElementById('roster-screen').style.display === 'none') return;
   if (!window.CampaignStore.available) {
     area.innerHTML = `<div class="roster-section-header">Campaigns</div>
       <p class="campaign-note">Campaign service unavailable (offline?). Local characters are unaffected.</p>`;
@@ -1493,6 +1497,10 @@ function importCharacter() {
     char.skills      = { ...base.skills,      ...(raw.skills      || {}) };
     char.armor       = { ...base.armor,       ...(raw.armor       || {}) };
     char.origin_perk = { ...base.origin_perk, ...(raw.origin_perk || {}) };
+    // Imports are always local: a stale/hand-edited _cloud tag would exclude
+    // the character from localStorage saves (silent loss if the cloud write
+    // is rejected). Move-to-campaign is the only way to tag a character.
+    delete char._cloud;
 
     CHARACTERS[char.id] = char;
     saveAllCharacters();
