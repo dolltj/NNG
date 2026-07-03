@@ -13,6 +13,10 @@ let PERKS_CONFIG  = null;   // loaded from perks.json — array of perk dictiona
 let CHARACTERS    = {};     // { [id]: characterObject }
 let ACTIVE_ID     = null;   // currently open character id
 let SAVE_TIMER    = null;   // debounce handle for autosave
+let CURRENT_USER = null;   // supabase user object when signed in
+let CAMPAIGNS = [];        // [{id, name, gm_id}]
+let CAMPAIGNS_BY_ID = {};  // same, keyed by id
+let VIEW_ONLY = false;     // true when the open sheet belongs to someone else
 
 const STORAGE_CHARS_KEY  = 'ttrpg_characters';
 const STORAGE_ACTIVE_KEY = 'ttrpg_active_id';
@@ -65,7 +69,11 @@ function loadAllCharacters() {
 
 function saveAllCharacters() {
   try {
-    localStorage.setItem(STORAGE_CHARS_KEY, JSON.stringify(CHARACTERS));
+    const localOnly = {};
+    for (const [id, c] of Object.entries(CHARACTERS)) {
+      if (!c._cloud) localOnly[id] = c;
+    }
+    localStorage.setItem(STORAGE_CHARS_KEY, JSON.stringify(localOnly));
     return true;
   } catch (err) {
     console.error('Failed to save characters:', err);
@@ -78,12 +86,34 @@ function saveAllCharacters() {
   }
 }
 
+/**
+ * Persist one character to wherever it lives: Supabase for campaign
+ * characters, the shared localStorage blob for local ones.
+ * Resolves false (and shows the error indicator) on failure.
+ */
+async function persistCharacter(char) {
+  if (!char || !char._cloud) return saveAllCharacters();
+  try {
+    await window.CampaignStore.upsertCharacter(char);
+    return true;
+  } catch (err) {
+    console.error('Failed to save character to campaign:', err);
+    const indicator = document.getElementById('save-indicator');
+    if (indicator) {
+      indicator.className = 'save-indicator error';
+      indicator.querySelector('.save-dot-label').textContent = 'Save FAILED — are you signed in?';
+    }
+    return false;
+  }
+}
+
 function scheduleSave() {
+  if (VIEW_ONLY) return; // read-only sheets never save (RLS enforces this server-side too)
   const indicator = document.getElementById('save-indicator');
   if (indicator) { indicator.className = 'save-indicator saving'; indicator.querySelector('.save-dot-label').textContent = 'Saving…'; }
   clearTimeout(SAVE_TIMER);
-  SAVE_TIMER = setTimeout(() => {
-    if (!saveAllCharacters()) return;
+  SAVE_TIMER = setTimeout(async () => {
+    if (!await persistCharacter(getChar())) return;
     if (indicator) {
       indicator.className = 'save-indicator saved';
       indicator.querySelector('.save-dot-label').textContent = 'Saved';
@@ -1192,7 +1222,7 @@ function confirmAdvantageRoll() {
 // -----------------------------------------------
 function exportCharacter() {
   const char = getChar();
-  const blob = new Blob([JSON.stringify(char, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(stripCloudMeta(char), null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
