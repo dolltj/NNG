@@ -187,7 +187,9 @@ function renderRoster() {
   screen.innerHTML = `
     <h1 class="roster-title">⚔ Character Vault</h1>
     <p class="roster-subtitle">${CONFIG.system} · Select or create a character</p>
+    <div class="roster-section-header">My Characters <span class="roster-section-note">(this device only)</span></div>
     <div class="roster-grid" id="roster-grid"></div>
+    <div id="campaign-area"></div>
   `;
   const grid = document.getElementById('roster-grid');
 
@@ -225,6 +227,8 @@ function renderRoster() {
     openCharacter(id);
   });
   grid.appendChild(newBtn);
+
+  renderCampaignArea();
 }
 
 function showRoster() {
@@ -234,6 +238,150 @@ function showRoster() {
   document.getElementById('app-screen').classList.remove('active');
   renderRoster();
 }
+
+// -----------------------------------------------
+// CAMPAIGNS (roster section)
+// -----------------------------------------------
+async function renderCampaignArea() {
+  const area = document.getElementById('campaign-area');
+  if (!area) return;
+  if (!window.CampaignStore.available) {
+    area.innerHTML = `<div class="roster-section-header">Campaigns</div>
+      <p class="campaign-note">Campaign service unavailable (offline?). Local characters are unaffected.</p>`;
+    return;
+  }
+
+  const session = await window.CampaignStore.getSession();
+  CURRENT_USER = session ? session.user : null;
+
+  if (!CURRENT_USER) {
+    area.innerHTML = `
+      <div class="roster-section-header">Campaigns</div>
+      <div class="campaign-signin">
+        <input class="field-input" id="camp-email" type="email" placeholder="Player email">
+        <input class="field-input" id="camp-password" type="password" placeholder="Password">
+        <button class="btn btn-primary" id="camp-signin-btn">Sign In</button>
+      </div>
+      <p class="campaign-note">Sign in to see your group's campaigns. Ask the GM for an account.</p>`;
+    document.getElementById('camp-signin-btn').addEventListener('click', async () => {
+      try {
+        await window.CampaignStore.signIn(
+          document.getElementById('camp-email').value.trim(),
+          document.getElementById('camp-password').value
+        );
+        renderCampaignArea();
+      } catch (err) {
+        alert(`Sign-in failed: ${err.message}`);
+      }
+    });
+    return;
+  }
+
+  let characters;
+  try {
+    [CAMPAIGNS, characters] = await Promise.all([
+      window.CampaignStore.listCampaigns(),
+      window.CampaignStore.listCharacters()
+    ]);
+  } catch (err) {
+    area.innerHTML = `<div class="roster-section-header">Campaigns</div>
+      <p class="campaign-note">Couldn't load campaigns: ${escHtml(err.message)}</p>`;
+    return;
+  }
+  CAMPAIGNS_BY_ID = Object.fromEntries(CAMPAIGNS.map(c => [c.id, c]));
+
+  area.innerHTML = `
+    <div class="roster-section-header">Campaigns
+      <span class="campaign-account">${escHtml(CURRENT_USER.email)} · <a href="#" id="camp-signout">sign out</a></span>
+    </div>
+    <div id="campaign-blocks"></div>
+    <button class="btn btn-secondary mt-md" id="new-campaign-btn">＋ New Campaign</button>`;
+
+  document.getElementById('camp-signout').addEventListener('click', async e => {
+    e.preventDefault();
+    await window.CampaignStore.signOut();
+    CURRENT_USER = null;
+    renderRoster();
+  });
+  document.getElementById('new-campaign-btn').addEventListener('click', async () => {
+    const name = (prompt('Campaign name:') || '').trim();
+    if (!name) return;
+    try { await window.CampaignStore.createCampaign(name); renderCampaignArea(); }
+    catch (err) { alert(`Couldn't create campaign: ${err.message}`); }
+  });
+
+  const blocks = document.getElementById('campaign-blocks');
+  CAMPAIGNS.forEach(campaign => {
+    blocks.appendChild(buildCampaignBlock(campaign, characters.filter(r => r.campaign_id === campaign.id)));
+  });
+  if (CAMPAIGNS.length === 0) {
+    blocks.innerHTML = '<p class="campaign-note">No campaigns yet — create one below.</p>';
+  }
+
+  addMoveButtonsToLocalCards();
+}
+
+function cloudRowToChar(row) {
+  return { ...row.data, id: row.id, _cloud: { campaign_id: row.campaign_id, owner_id: row.owner_id } };
+}
+
+function buildCampaignBlock(campaign, rows) {
+  const block = document.createElement('div');
+  block.className = 'campaign-block';
+  const isGM = campaign.gm_id === CURRENT_USER.id;
+  block.innerHTML = `
+    <div class="campaign-block-header">${escHtml(campaign.name)}${isGM ? ' <span class="admin-item-badge badge-official">GM</span>' : ''}</div>
+    <div class="roster-grid"></div>`;
+  const grid = block.querySelector('.roster-grid');
+
+  rows.forEach(row => {
+    const char = cloudRowToChar(row);
+    const mine = row.owner_id === CURRENT_USER.id;
+    const editable = canEditCharacter(char, CURRENT_USER.id, CAMPAIGNS_BY_ID);
+    const card = document.createElement('div');
+    card.className = 'roster-card' + (editable ? '' : ' roster-card-readonly');
+    card.innerHTML = `
+      ${editable ? `<button class="roster-card-delete" title="Remove from campaign">✕</button>` : ''}
+      <div class="roster-card-name">${escHtml(char.name)}</div>
+      <div class="roster-card-info">
+        <span>${escHtml(char.player_name || (mine ? 'you' : 'party member'))}</span>
+        <span>Lv ${char.level}</span>
+        ${editable ? '' : '<span title="View only">👁</span>'}
+      </div>`;
+    card.addEventListener('click', e => {
+      if (e.target.matches('.roster-card-delete')) return;
+      CHARACTERS[char.id] = char;
+      openCharacter(char.id);
+    });
+    const del = card.querySelector('.roster-card-delete');
+    if (del) del.addEventListener('click', async e => {
+      e.stopPropagation();
+      if (!confirm(`Remove "${char.name}" from the campaign? (Export it first if you want a copy.)`)) return;
+      try {
+        await window.CampaignStore.deleteCharacter(char.id);
+        delete CHARACTERS[char.id];
+        renderCampaignArea();
+      } catch (err) { alert(`Couldn't delete: ${err.message}`); }
+    });
+    grid.appendChild(card);
+  });
+
+  const newBtn = document.createElement('button');
+  newBtn.className = 'roster-new-btn';
+  newBtn.innerHTML = `<span class="plus-icon">＋</span><span>New Character here</span>`;
+  newBtn.addEventListener('click', async () => {
+    const id = 'char_' + Date.now();
+    const char = buildDefaultCharacter(id);
+    char._cloud = { campaign_id: campaign.id, owner_id: CURRENT_USER.id };
+    CHARACTERS[id] = char;
+    if (await persistCharacter(char)) openCharacter(id);
+    else alert('Could not create the character in the campaign.');
+  });
+  grid.appendChild(newBtn);
+  return block;
+}
+
+function addMoveButtonsToLocalCards() {} // implemented in the move-to-campaign task
 
 // -----------------------------------------------
 // OPEN A CHARACTER
