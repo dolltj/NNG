@@ -381,7 +381,51 @@ function buildCampaignBlock(campaign, rows) {
   return block;
 }
 
-function addMoveButtonsToLocalCards() {} // implemented in the move-to-campaign task
+function addMoveButtonsToLocalCards() {
+  if (!CURRENT_USER || CAMPAIGNS.length === 0) return;
+  document.querySelectorAll('#roster-grid .roster-card').forEach(card => {
+    const del = card.querySelector('.roster-card-delete');
+    if (!del) return; // the "new character" button has no delete
+    const id = del.dataset.id;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-secondary roster-card-move';
+    btn.textContent = '☁ Move to campaign…';
+    btn.addEventListener('click', e => { e.stopPropagation(); openMoveModal(id); });
+    card.appendChild(btn);
+  });
+}
+
+function openMoveModal(charId) {
+  const char = CHARACTERS[charId];
+  if (!char) return;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal">
+      <div class="modal-title">Move "${escHtml(char.name)}" to a campaign</div>
+      <p class="campaign-note">The character will live in the campaign and leave this device's local list. (Export/Import brings it back.)</p>
+      <div class="modal-actions" style="flex-direction:column; align-items:stretch">
+        ${CAMPAIGNS.map(c => `<button class="btn btn-primary" data-camp="${c.id}">${escHtml(c.name)}</button>`).join('')}
+        <button class="btn btn-secondary" data-cancel>Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
+  backdrop.querySelector('[data-cancel]').addEventListener('click', () => backdrop.remove());
+  backdrop.querySelectorAll('[data-camp]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      char._cloud = { campaign_id: btn.dataset.camp, owner_id: CURRENT_USER.id };
+      if (await persistCharacter(char)) {
+        saveAllCharacters(); // rewrites localStorage without it (now tagged _cloud)
+        backdrop.remove();
+        renderRoster();
+      } else {
+        delete char._cloud; // failed upload — stays local
+        alert('Move failed — the character is still local.');
+      }
+    });
+  });
+}
 
 // -----------------------------------------------
 // OPEN A CHARACTER

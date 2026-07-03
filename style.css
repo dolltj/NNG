@@ -275,6 +275,12 @@ body::before {
   background: rgba(231,76,60,0.1);
 }
 
+.roster-card-move {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  width: 100%;
+}
+
 .roster-new-btn {
   background: linear-gradient(135deg, var(--bg-raised), var(--bg-card));
   border: 2px dashed var(--border-mid);
