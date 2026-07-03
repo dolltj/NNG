@@ -361,7 +361,7 @@ function buildCampaignBlock(campaign, rows) {
     const card = document.createElement('div');
     card.className = 'roster-card' + (editable ? '' : ' roster-card-readonly');
     card.innerHTML = `
-      ${editable ? `<button class="roster-card-delete" title="Remove from campaign">✕</button>` : ''}
+      ${editable ? `<button class="roster-card-delete" title="Delete character permanently">✕</button>` : ''}
       <div class="roster-card-name">${escHtml(char.name)}</div>
       <div class="roster-card-info">
         <span>${escHtml(char.player_name || (mine ? 'you' : 'party member'))}</span>
@@ -376,13 +376,24 @@ function buildCampaignBlock(campaign, rows) {
     const del = card.querySelector('.roster-card-delete');
     if (del) del.addEventListener('click', async e => {
       e.stopPropagation();
-      if (!confirm(`Remove "${char.name}" from the campaign? (Export it first if you want a copy.)`)) return;
+      if (!confirm(`Delete "${char.name}" permanently?\n\nTo keep the character, use "⇄ Move…" → Remove from campaign instead, or Export a copy first.`)) return;
       try {
         await window.CampaignStore.deleteCharacter(char.id);
         delete CHARACTERS[char.id];
         renderCampaignArea();
       } catch (err) { alert(`Couldn't delete: ${err.message}`); }
     });
+    if (editable) {
+      const move = document.createElement('button');
+      move.className = 'btn btn-secondary roster-card-move';
+      move.textContent = '⇄ Move…';
+      move.addEventListener('click', e => {
+        e.stopPropagation();
+        CHARACTERS[char.id] = char;
+        openMoveModal(char.id);
+      });
+      card.appendChild(move);
+    }
     grid.appendChild(card);
   });
 
@@ -472,17 +483,27 @@ function addMoveButtonsToLocalCards() {
   });
 }
 
+// One modal for every association change: local→campaign (upload), cloud
+// transfer between campaigns, and cloud unassign (campaign_id → null, lands
+// in "Not in a campaign"). Ownership is preserved on cloud moves — a GM
+// re-homing a player's character must not become its owner.
 function openMoveModal(charId) {
   const char = CHARACTERS[charId];
   if (!char) return;
+  const prevCloud = char._cloud || null;
+  const currentCampaignId = prevCloud ? prevCloud.campaign_id : null;
+  const targets = CAMPAIGNS.filter(c => c.id !== currentCampaignId);
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = `
     <div class="modal">
-      <div class="modal-title">Move "${escHtml(char.name)}" to a campaign</div>
-      <p class="campaign-note">The character will live in the campaign and leave this device's local list. (Export/Import brings it back.)</p>
+      <div class="modal-title">Move "${escHtml(char.name)}"</div>
+      <p class="campaign-note">${prevCloud
+        ? 'Transfers keep the character in the cloud; removing it leaves it under "Not in a campaign".'
+        : `The character will live in the campaign and leave this device's local list. (Export/Import brings it back.)`}</p>
       <div class="modal-actions" style="flex-direction:column; align-items:stretch">
-        ${CAMPAIGNS.map(c => `<button class="btn btn-primary" data-camp="${c.id}">${escHtml(c.name)}</button>`).join('')}
+        ${targets.map(c => `<button class="btn btn-primary" data-camp="${c.id}">${escHtml(c.name)}</button>`).join('')}
+        ${currentCampaignId ? '<button class="btn btn-secondary" data-camp="">⊘ Remove from campaign</button>' : ''}
         <button class="btn btn-secondary" data-cancel>Cancel</button>
       </div>
     </div>`;
@@ -491,14 +512,18 @@ function openMoveModal(charId) {
   backdrop.querySelector('[data-cancel]').addEventListener('click', () => backdrop.remove());
   backdrop.querySelectorAll('[data-camp]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      char._cloud = { campaign_id: btn.dataset.camp, owner_id: CURRENT_USER.id };
+      char._cloud = {
+        campaign_id: btn.dataset.camp || null,
+        owner_id: prevCloud ? prevCloud.owner_id : CURRENT_USER.id
+      };
       if (await persistCharacter(char)) {
-        saveAllCharacters(); // rewrites localStorage without it (now tagged _cloud)
+        saveAllCharacters(); // for local origins: drops it from localStorage now that it's cloud-tagged
         backdrop.remove();
         renderRoster();
       } else {
-        delete char._cloud; // failed upload — stays local
-        alert('Move failed — the character is still local.');
+        if (prevCloud) char._cloud = prevCloud;
+        else delete char._cloud;
+        alert('Move failed — nothing changed.');
       }
     });
   });
