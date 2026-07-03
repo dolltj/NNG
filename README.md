@@ -1,12 +1,24 @@
 # Character Vault
 
-A browser-based TTRPG character sheet with D&D 5e support and Roll20 integration.
+A browser-based character sheet for the NNG system with a multi-character roster, weapon/attachment/perk dictionaries, and Roll20 integration.
 
 ## Using it
 
 Open the hosted URL: `https://dolltj.github.io/NNG/`
 
 Your characters are saved in your own browser only (not shared with other players). Use the Export/Import buttons in the top bar to back up a character or move it to another device/browser.
+
+## Shared configs (weapons, attachments, perks)
+
+The official weapon/attachment/perk lists live in a central Supabase table, not in this repo. Every player's sheet fetches them on load (and falls back to the JSON files bundled here if the service is unreachable).
+
+**For the GM:** open [admin.html](https://dolltj.github.io/NNG/admin.html), sign in (top-right), make your edits — they stage as local drafts marked 🔧/Edited — then click **⬆ Publish to Everyone**. Players receive the change the next time they load the sheet.
+
+**For players:** nothing to do. You can also add personal homebrew via your own browser's admin page without signing in; unpublished items stay local to your browser.
+
+## Development
+
+No build step — plain HTML/JS/CSS. Run the unit tests with `node --test` (Node 18+) from the repo root.
 
 ## Sending rolls to Roll20 (optional)
 
