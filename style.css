@@ -1497,6 +1497,9 @@ textarea.field-input {
 
 .admin-item-row:hover .delete-item-btn { opacity: 1; }
 
+.admin-item-deleted { opacity: 0.55; }
+.admin-item-deleted .admin-item-label { text-decoration: line-through; }
+
 .admin-item-label {
   flex: 1;
   font-weight: 600;

@@ -12,6 +12,49 @@
 
   const STORAGE_KEY = 'ttrpg_custom_weapon_config';
   const PERK_STORAGE_KEY = 'ttrpg_custom_perk_config';
+  const DELETED_KEY = 'ttrpg_deleted_config_ids';
+
+  // -------- staged deletions (tombstones) --------
+  // Deleting an official dictionary entry can't remove it from the base
+  // config, so it's recorded here and filtered out of merges until Publish
+  // ships a canon without it. kind: 'weapons' | 'attachments' | 'perks'.
+  function _loadDeleted() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(DELETED_KEY) || 'null') || {};
+      return {
+        weapons: Array.isArray(parsed.weapons) ? parsed.weapons : [],
+        attachments: Array.isArray(parsed.attachments) ? parsed.attachments : [],
+        perks: Array.isArray(parsed.perks) ? parsed.perks : []
+      };
+    } catch {
+      return { weapons: [], attachments: [], perks: [] };
+    }
+  }
+
+  function getDeletedIds(kind) {
+    return _loadDeleted()[kind] || [];
+  }
+
+  function markDeleted(kind, id) {
+    const d = _loadDeleted();
+    if (!d[kind].includes(id)) d[kind].push(id);
+    localStorage.setItem(DELETED_KEY, JSON.stringify(d));
+  }
+
+  function restoreDeleted(kind, id) {
+    const d = _loadDeleted();
+    d[kind] = d[kind].filter(x => x !== id);
+    localStorage.setItem(DELETED_KEY, JSON.stringify(d));
+  }
+
+  /** Default: drop tombstoned items. includeDeleted (admin lists): keep
+   *  them, marked _deleted, so a Restore action can be offered. */
+  function _applyDeleted(list, deletedIds, includeDeleted) {
+    if (deletedIds.length === 0) return list;
+    return includeDeleted
+      ? list.map(item => deletedIds.includes(item.id) ? { ...item, _deleted: true } : item)
+      : list.filter(item => !deletedIds.includes(item.id));
+  }
 
   function _loadPerks() {
     try {
@@ -42,8 +85,8 @@
     _savePerks(_loadPerks().filter(p => p.id !== id));
   }
 
-  function getPerksMergedConfig(basePerks) {
-    return _mergeList(basePerks, _loadPerks());
+  function getPerksMergedConfig(basePerks, opts = {}) {
+    return _applyDeleted(_mergeList(basePerks, _loadPerks()), getDeletedIds('perks'), !!opts.includeDeleted);
   }
 
   function _load() {
@@ -104,6 +147,7 @@
   function clearAllCustom() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(PERK_STORAGE_KEY);
+    localStorage.removeItem(DELETED_KEY);
   }
 
   // Deep-clones via JSON round-trip (all weapon/attachment data is plain
@@ -129,11 +173,13 @@
     return [...merged, ...newItems];
   }
 
-  function getMergedConfig(baseConfig) {
+  function getMergedConfig(baseConfig, opts = {}) {
     const custom = _load();
+    const include = !!opts.includeDeleted;
+    const del = _loadDeleted();
     return {
-      weapons: _mergeList(baseConfig.weapons, custom.weapons),
-      attachments: _mergeList(baseConfig.attachments, custom.attachments)
+      weapons: _applyDeleted(_mergeList(baseConfig.weapons, custom.weapons), del.weapons, include),
+      attachments: _applyDeleted(_mergeList(baseConfig.attachments, custom.attachments), del.attachments, include)
     };
   }
 
@@ -142,7 +188,7 @@
     return { weapons: wa.weapons, attachments: wa.attachments, perks: _loadPerks() };
   }
 
-  window.WeaponStore = {
+  const api = {
     getCustomWeapons,
     getCustomAttachments,
     saveCustomWeapon,
@@ -155,6 +201,11 @@
     deleteCustomPerk,
     getPerksMergedConfig,
     exportAll,
-    clearAllCustom
+    clearAllCustom,
+    markDeleted,
+    restoreDeleted,
+    getDeletedIds
   };
+  if (typeof window !== 'undefined') window.WeaponStore = api;
+  if (typeof module !== 'undefined') module.exports = api; // node-requirable for tests
 })();

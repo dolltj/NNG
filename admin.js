@@ -41,16 +41,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+// Filtered merge (tombstoned items excluded) — used by forms so deleted
+// weapons aren't offered as attachment targets. The list renderers fetch
+// their own includeDeleted merges to show Restore rows.
 function getAllWeapons() {
   return WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG).weapons;
-}
-
-function getAllAttachments() {
-  return WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG).attachments;
-}
-
-function getAllPerks() {
-  return WeaponStore.getPerksMergedConfig(BASE_PERK_CONFIG);
 }
 
 function exportCustomItems() {
@@ -203,46 +198,87 @@ function buildActionRowForm(action = {}) {
   return row;
 }
 
+// Shared row builder for the three dictionary lists. spec:
+//   name         display name
+//   kindLabel    'weapon' | 'attachment' | 'perk' (confirm messages)
+//   kind         'weapons' | 'attachments' | 'perks' (tombstone key)
+//   meta         right-hand meta text (trusted, computed)
+//   deleteDraft  store fn removing the custom/override entry
+//   onEdit, rerender
+//   deleteWarning consequence line shown when deleting an official entry
+function buildAdminRow(item, spec) {
+  const row = document.createElement('div');
+  row.className = 'admin-item-row' + (item._deleted ? ' admin-item-deleted' : '');
+
+  if (item._deleted) {
+    row.innerHTML = `
+      <span class="admin-item-label">${escHtml(spec.name)}</span>
+      <span class="admin-item-badge badge-edited">Deleted — removed for everyone on Publish</span>
+      <button class="btn btn-secondary" data-restore>Restore</button>
+    `;
+    row.querySelector('[data-restore]').addEventListener('click', () => {
+      WeaponStore.restoreDeleted(spec.kind, item.id);
+      spec.rerender();
+    });
+    return row;
+  }
+
+  const badge = item._overridden
+    ? '<span class="admin-item-badge badge-edited">Edited</span>'
+    : item._custom
+      ? ''
+      : '<span class="admin-item-badge badge-official">Official</span>';
+  row.innerHTML = `
+    <span class="admin-item-label">${item._custom ? '🔧 ' : ''}${escHtml(spec.name)}</span>
+    ${badge}
+    <span class="admin-item-meta">${spec.meta}</span>
+    <button class="btn btn-secondary" data-edit>Edit</button>
+    ${item._overridden ? '<button class="btn btn-secondary" data-revert>↩ Revert</button>' : ''}
+    <button class="delete-item-btn" data-delete title="Delete">✕</button>
+  `;
+  row.querySelector('[data-edit]').addEventListener('click', spec.onEdit);
+
+  const revertBtn = row.querySelector('[data-revert]');
+  if (revertBtn) revertBtn.addEventListener('click', () => {
+    if (!confirm(`Revert "${spec.name}" to its official version?`)) return;
+    spec.deleteDraft(item.id);
+    spec.rerender();
+  });
+
+  row.querySelector('[data-delete]').addEventListener('click', () => {
+    if (item._custom) {
+      if (!confirm(`Delete custom ${spec.kindLabel} "${spec.name}"?`)) return;
+      spec.deleteDraft(item.id);
+    } else {
+      if (!confirm(`Delete ${spec.kindLabel} "${spec.name}" from the dictionary?\n\nIt is removed for everyone when you Publish (you can Restore until then). ${spec.deleteWarning}`)) return;
+      if (item._overridden) spec.deleteDraft(item.id); // the override goes with it
+      WeaponStore.markDeleted(spec.kind, item.id);
+    }
+    spec.rerender();
+  });
+
+  return row;
+}
+
 function renderWeaponsList() {
   const wrap = document.getElementById('weapons-list');
   wrap.innerHTML = '';
-  const weapons = getAllWeapons();
+  const weapons = WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG, { includeDeleted: true }).weapons;
   if (weapons.length === 0) {
     wrap.innerHTML = '<p style="color:var(--text-muted)">(none yet)</p>';
     return;
   }
   weapons.forEach(weapon => {
-    const row = document.createElement('div');
-    row.className = 'admin-item-row';
-    const badge = weapon._overridden
-      ? '<span class="admin-item-badge badge-edited">Edited</span>'
-      : weapon._custom
-        ? ''
-        : '<span class="admin-item-badge badge-official">Official</span>';
-    const canDelete = weapon._overridden || weapon._custom;
-    const deleteBtnHtml = canDelete
-      ? `<button class="delete-item-btn" data-delete title="${weapon._overridden ? 'Revert to official version' : 'Delete'}">✕</button>`
-      : '';
-    row.innerHTML = `
-      <span class="admin-item-label">${weapon._custom ? '🔧 ' : ''}${escHtml(weapon.label)}</span>
-      ${badge}
-      <span class="admin-item-meta">${(weapon.actions || []).length} action${(weapon.actions || []).length === 1 ? '' : 's'}</span>
-      <button class="btn btn-secondary" data-edit>Edit</button>
-      ${deleteBtnHtml}
-    `;
-    row.querySelector('[data-edit]').addEventListener('click', () => renderWeaponForm(weapon));
-    const deleteBtn = row.querySelector('[data-delete]');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => {
-        const msg = weapon._overridden
-          ? `Revert "${weapon.label}" to its official version?`
-          : `Delete custom weapon "${weapon.label}"?`;
-        if (!confirm(msg)) return;
-        WeaponStore.deleteCustomWeapon(weapon.id);
-        renderWeaponsList();
-      });
-    }
-    wrap.appendChild(row);
+    wrap.appendChild(buildAdminRow(weapon, {
+      name: weapon.label,
+      kindLabel: 'weapon',
+      kind: 'weapons',
+      meta: `${(weapon.actions || []).length} action${(weapon.actions || []).length === 1 ? '' : 's'}`,
+      deleteDraft: WeaponStore.deleteCustomWeapon,
+      onEdit: () => renderWeaponForm(weapon),
+      rerender: renderWeaponsList,
+      deleteWarning: 'Characters that carry this weapon will lose it from their sheets.'
+    }));
   });
 }
 
@@ -423,43 +459,22 @@ function buildNoteRowForm(note = '') {
 function renderAttachmentsList() {
   const wrap = document.getElementById('attachments-list');
   wrap.innerHTML = '';
-  const attachments = getAllAttachments();
+  const attachments = WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG, { includeDeleted: true }).attachments;
   if (attachments.length === 0) {
     wrap.innerHTML = '<p style="color:var(--text-muted)">(none yet)</p>';
     return;
   }
   attachments.forEach(att => {
-    const row = document.createElement('div');
-    row.className = 'admin-item-row';
-    const badge = att._overridden
-      ? '<span class="admin-item-badge badge-edited">Edited</span>'
-      : att._custom
-        ? ''
-        : '<span class="admin-item-badge badge-official">Official</span>';
-    const canDelete = att._overridden || att._custom;
-    const deleteBtnHtml = canDelete
-      ? `<button class="delete-item-btn" data-delete title="${att._overridden ? 'Revert to official version' : 'Delete'}">✕</button>`
-      : '';
-    row.innerHTML = `
-      <span class="admin-item-label">${att._custom ? '🔧 ' : ''}${escHtml(att.label)}</span>
-      ${badge}
-      <span class="admin-item-meta">${(att.compatible_weapons || []).length} compatible weapon(s)</span>
-      <button class="btn btn-secondary" data-edit>Edit</button>
-      ${deleteBtnHtml}
-    `;
-    row.querySelector('[data-edit]').addEventListener('click', () => renderAttachmentForm(att));
-    const deleteBtn = row.querySelector('[data-delete]');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => {
-        const msg = att._overridden
-          ? `Revert "${att.label}" to its official version?`
-          : `Delete custom attachment "${att.label}"?`;
-        if (!confirm(msg)) return;
-        WeaponStore.deleteCustomAttachment(att.id);
-        renderAttachmentsList();
-      });
-    }
-    wrap.appendChild(row);
+    wrap.appendChild(buildAdminRow(att, {
+      name: att.label,
+      kindLabel: 'attachment',
+      kind: 'attachments',
+      meta: `${(att.compatible_weapons || []).length} compatible weapon(s)`,
+      deleteDraft: WeaponStore.deleteCustomAttachment,
+      onEdit: () => renderAttachmentForm(att),
+      rerender: renderAttachmentsList,
+      deleteWarning: 'Weapons that have it attached will lose its effects.'
+    }));
   });
 }
 
@@ -553,43 +568,22 @@ function renderAttachmentForm(existingAttachment) {
 function renderPerksList() {
   const wrap = document.getElementById('perks-list');
   wrap.innerHTML = '';
-  const perks = getAllPerks();
+  const perks = WeaponStore.getPerksMergedConfig(BASE_PERK_CONFIG, { includeDeleted: true });
   if (perks.length === 0) {
     wrap.innerHTML = '<p style="color:var(--text-muted)">(none yet)</p>';
     return;
   }
   perks.forEach(perk => {
-    const row = document.createElement('div');
-    row.className = 'admin-item-row';
-    const badge = perk._overridden
-      ? '<span class="admin-item-badge badge-edited">Edited</span>'
-      : perk._custom
-        ? ''
-        : '<span class="admin-item-badge badge-official">Official</span>';
-    const canDelete = perk._overridden || perk._custom;
-    const deleteBtnHtml = canDelete
-      ? `<button class="delete-item-btn" data-delete title="${perk._overridden ? 'Revert to official version' : 'Delete'}">✕</button>`
-      : '';
-    row.innerHTML = `
-      <span class="admin-item-label">${perk._custom ? '🔧 ' : ''}${escHtml(perk.name)}</span>
-      ${badge}
-      <span class="admin-item-meta">Lv ${perk.level}</span>
-      <button class="btn btn-secondary" data-edit>Edit</button>
-      ${deleteBtnHtml}
-    `;
-    row.querySelector('[data-edit]').addEventListener('click', () => renderPerkForm(perk));
-    const deleteBtn = row.querySelector('[data-delete]');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => {
-        const msg = perk._overridden
-          ? `Revert "${perk.name}" to its official version?`
-          : `Delete custom perk "${perk.name}"?`;
-        if (!confirm(msg)) return;
-        WeaponStore.deleteCustomPerk(perk.id);
-        renderPerksList();
-      });
-    }
-    wrap.appendChild(row);
+    wrap.appendChild(buildAdminRow(perk, {
+      name: perk.name,
+      kindLabel: 'perk',
+      kind: 'perks',
+      meta: `Lv ${perk.level}`,
+      deleteDraft: WeaponStore.deleteCustomPerk,
+      onEdit: () => renderPerkForm(perk),
+      rerender: renderPerksList,
+      deleteWarning: 'Perks already on character sheets are copies and keep working; this only removes it from the dictionary.'
+    }));
   });
 }
 
