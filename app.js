@@ -1549,15 +1549,16 @@ function renderTabActions(char) {
   });
 
   // --- Perk actions, then common rulebook actions, grouped by type ---
-  const groups = { 'Action': [], 'Quick Action': [], 'Reaction': [], 'Grapple': [] };
+  const perkGroups = { 'Action': [], 'Quick Action': [], 'Reaction': [] };
   (char.perks || []).forEach(perk => {
     const a = perk.action;
-    if (a && a.type && groups[a.type]) {
-      groups[a.type].push({ label: a.label, text: a.text, source: perk.name });
+    if (a && a.type && perkGroups[a.type]) {
+      perkGroups[a.type].push({ label: a.label, text: a.text, source: perk.name });
     }
   });
+  const commonGroups = { 'Action': [], 'Quick Action': [], 'Reaction': [], 'Grapple': [] };
   (CONFIG.common_actions || []).forEach(a => {
-    if (groups[a.type]) groups[a.type].push({ label: a.label, text: a.text, rolls: a.rolls, common: true });
+    if (commonGroups[a.type]) commonGroups[a.type].push({ label: a.label, text: a.text, rolls: a.rolls, common: true });
   });
 
   // Roll modifier for an action's 'test' roll. 'best_str_agi' = the rules
@@ -1618,26 +1619,27 @@ function renderTabActions(char) {
     return card;
   };
 
-  [['Action', 'Actions'], ['Quick Action', 'Quick Actions'], ['Reaction', 'Reactions'], ['Grapple', 'Grappling']].forEach(([type, title]) => {
-    const entries = groups[type];
+  // Perk-granted actions first, in their own sections (full-width rows) —
+  // these are the character's special abilities. The rulebook's basic
+  // actions follow in 3-column grids.
+  [['Action', 'Perk Actions'], ['Quick Action', 'Perk Quick Actions'], ['Reaction', 'Perk Reactions']].forEach(([type, title]) => {
+    const entries = perkGroups[type];
     if (entries.length === 0) return;
     addHeader(title, 'mt-md');
-    // Perk actions get full-width rows; the rulebook's basic actions pack
-    // into a 3-column grid to save vertical space.
-    const perkEntries = entries.filter(a => !a.common);
-    const commonEntries = entries.filter(a => a.common);
-    if (perkEntries.length > 0) {
-      const list = document.createElement('div');
-      list.className = 'action-card-list';
-      perkEntries.forEach(a => list.appendChild(buildCard(a)));
-      panel.appendChild(list);
-    }
-    if (commonEntries.length > 0) {
-      const grid = document.createElement('div');
-      grid.className = 'action-card-grid' + (perkEntries.length ? ' mt-sm' : '');
-      commonEntries.forEach(a => grid.appendChild(buildCard(a)));
-      panel.appendChild(grid);
-    }
+    const list = document.createElement('div');
+    list.className = 'action-card-list';
+    entries.forEach(a => list.appendChild(buildCard(a)));
+    panel.appendChild(list);
+  });
+
+  [['Action', 'Actions'], ['Quick Action', 'Quick Actions'], ['Reaction', 'Reactions'], ['Grapple', 'Grappling']].forEach(([type, title]) => {
+    const entries = commonGroups[type];
+    if (entries.length === 0) return;
+    addHeader(title, 'mt-md');
+    const grid = document.createElement('div');
+    grid.className = 'action-card-grid';
+    entries.forEach(a => grid.appendChild(buildCard(a)));
+    panel.appendChild(grid);
   });
 }
 
