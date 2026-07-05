@@ -16,16 +16,19 @@ function deriveMaxHP(character) {
   return 50 + (str + fort) * level;
 }
 
-/** Injury Threshold = 10 + FOR */
+/** Injury Threshold = 10 + STR + FOR (NNGRules: "Injury Threshold") */
 function deriveInjuryThreshold(character) {
-  return 10 + (character.core_stats?.fortitude ?? 0);
+  const str  = character.core_stats?.strength  ?? 0;
+  const fort = character.core_stats?.fortitude ?? 0;
+  return 10 + str + fort;
 }
 
-/** Recovery Rate = 10 + (FOR + WIL) */
-function deriveRecoveryRate(character) {
+/** Recovery is a ROLL (1d10 + FOR + WIL, on a Short Rest); this is its
+ *  static modifier part. */
+function deriveRecoveryModifier(character) {
   const fort = character.core_stats?.fortitude ?? 0;
   const wil  = character.core_stats?.willpower ?? 0;
-  return 10 + (fort + wil);
+  return fort + wil;
 }
 
 /** Carrying Capacity = 10 + STR */
@@ -83,7 +86,7 @@ function buildAdvantageFormula(baseDieCount, modifier, advantage = 0, disadvanta
 // Node export for unit testing; no-op in the browser (no `module` global there).
 if (typeof module !== 'undefined') {
   module.exports = {
-    deriveMaxHP, deriveInjuryThreshold, deriveRecoveryRate,
+    deriveMaxHP, deriveInjuryThreshold, deriveRecoveryModifier,
     deriveCarryingCapacity, getResourceMax,
     buildTestFormula, buildAdvantageFormula
   };

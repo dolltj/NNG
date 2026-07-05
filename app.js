@@ -786,7 +786,7 @@ function renderTabAbilities(char) {
   CONFIG.tracked_resources.forEach(r => resGrid.appendChild(buildResourceCard(r, char)));
   panel.appendChild(resGrid);
 
-  // --- Derived stats (read-only) ---
+  // --- Derived stats + rests ---
   addSectionHeader('Recovery', 'mt-md');
   const derivedRow = document.createElement('div');
   derivedRow.className = 'combat-stats-row';
@@ -796,10 +796,19 @@ function renderTabAbilities(char) {
       <span class="combat-stat-chip-value">${deriveInjuryThreshold(char)}</span>
     </div>
     <div class="combat-stat-chip">
-      <span class="combat-stat-chip-label">Recovery Rate</span>
-      <span class="combat-stat-chip-value">${deriveRecoveryRate(char)}</span>
+      <span class="combat-stat-chip-label">Recovery</span>
+      <span class="combat-stat-chip-value">1d10 + ${deriveRecoveryModifier(char)}</span>
+    </div>
+    <div class="combat-stat-chip">
+      <span class="combat-stat-chip-label">Rest</span>
+      <span class="combat-stat-chip-value combat-stat-chip-value-row">
+        <button class="btn btn-secondary" id="short-rest-btn" title="1 hour — regain 1d10 + FOR + WIL HP and remove one Minor Injury">⏳ Short</button>
+        <button class="btn btn-secondary" id="long-rest-btn" title="8 hours — restore all HP and remove all Minor Injuries">🌙 Long</button>
+      </span>
     </div>
   `;
+  derivedRow.querySelector('#short-rest-btn').addEventListener('click', shortRest);
+  derivedRow.querySelector('#long-rest-btn').addEventListener('click', longRest);
   panel.appendChild(derivedRow);
 
   // --- Skills ---
@@ -1084,6 +1093,37 @@ function getSkillTotal(skillId, char) {
 function refreshSkillTotal(skillId) {
   const el = document.getElementById(`skill-total-${skillId}`);
   if (el) el.textContent = getSkillTotal(skillId, getChar());
+}
+
+// -----------------------------------------------
+// RESTS (NNGRules: Resting)
+// The recovery die is rolled locally — it mutates
+// sheet state, and the Roll20 bridge rolls its own
+// dice, so delegating it would desync the numbers.
+// -----------------------------------------------
+function shortRest() {
+  const char = getChar();
+  const hp = char.resources.hp;
+  if ((hp.current || 0) < 1) { alert('You need at least 1 Hit Point to rest.'); return; }
+  const die = Math.floor(Math.random() * 10) + 1;
+  const mod = deriveRecoveryModifier(char);
+  const healed = Math.min(deriveMaxHP(char), hp.current + die + mod) - hp.current;
+  hp.current += healed;
+  scheduleSave();
+  renderTabAbilities(char);
+  const injuryNote = (char.injuries || []).length ? ' Remove one Minor Injury.' : '';
+  window.Roll20Bridge.showRollToast(`⏳ Short Rest: 1d10 (${die}) + ${mod} → +${healed} HP.${injuryNote}`, 'success');
+}
+
+function longRest() {
+  const char = getChar();
+  if ((char.resources.hp.current || 0) < 1) { alert('You need at least 1 Hit Point to rest.'); return; }
+  if (!confirm('Long Rest (8 hours): restore all Hit Points and remove all Minor Injuries?')) return;
+  char.resources.hp.current = deriveMaxHP(char);
+  char.injuries = [];
+  scheduleSave();
+  renderTabAbilities(char);
+  window.Roll20Bridge.showRollToast('🌙 Long Rest complete: full HP, Minor Injuries removed.', 'success');
 }
 
 function recalcDerivedStats() {
@@ -1392,6 +1432,36 @@ function buildCombatStatsRow(char) {
     window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName });
   });
   wrap.appendChild(initEl);
+
+  // Defense Rolls (NNGRules: Evade / Block / Parry). Requirements (shield,
+  // melee weapon) aren't tracked by the sheet yet — stated in tooltips.
+  const defEl = document.createElement('div');
+  defEl.className = 'combat-stat-chip';
+  defEl.innerHTML = `
+    <span class="combat-stat-chip-label">Defense Rolls</span>
+    <span class="combat-stat-chip-value combat-stat-chip-value-row"></span>`;
+  const defWrap = defEl.querySelector('.combat-stat-chip-value-row');
+  [
+    { label: 'Evade', stat: 'agility',   title: '2d10 + AGI' },
+    { label: 'Block', stat: 'fortitude', title: '2d10 + FOR — requires an equipped shield' },
+    { label: 'Parry', stat: 'willpower', title: '2d10 + WIL — requires a melee weapon, vs melee attacks only' }
+  ].forEach(def => {
+    const btn = document.createElement('button');
+    btn.className = 'ability-roll-btn';
+    btn.textContent = `🎲 ${def.label}`;
+    btn.title = def.title;
+    btn.addEventListener('click', e => {
+      const mod = getChar().core_stats[def.stat] ?? 0;
+      const characterName = rollCharacterName(getChar());
+      if (e.shiftKey) {
+        openAdvantageModal({ label: def.label, baseDieCount: 2, modifier: mod, characterName });
+        return;
+      }
+      window.Roll20Bridge.sendToRoll20({ label: def.label, formula: buildTestFormula(mod), characterName });
+    });
+    defWrap.appendChild(btn);
+  });
+  wrap.appendChild(defEl);
 }
 
 // -----------------------------------------------
