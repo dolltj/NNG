@@ -587,6 +587,43 @@ function renderPerksList() {
   });
 }
 
+// Stat targets a perk modifier can adjust — must match the targets the
+// sheet applies in dice.js (applyPerkModifiers call sites) and app.js
+// (speed chip, initiative roll).
+const MODIFIER_TARGETS = [
+  { id: 'max_hp',            label: 'Max HP' },
+  { id: 'injury_threshold',  label: 'Injury Threshold' },
+  { id: 'recovery',          label: 'Recovery' },
+  { id: 'carrying_capacity', label: 'Carrying Capacity' },
+  { id: 'speed',             label: 'Speed' },
+  { id: 'initiative',        label: 'Initiative' }
+];
+
+function buildModifierRowForm(mod = {}) {
+  const row = document.createElement('div');
+  row.className = 'admin-action-row-fields';
+  row.innerHTML = `
+    <select class="field-input" data-m="target" style="flex:2">
+      ${MODIFIER_TARGETS.map(t => `<option value="${t.id}" ${mod.target === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}
+    </select>
+    <select class="field-input" data-m="type" style="flex:1">
+      <option value="add" ${mod.type !== 'pct' ? 'selected' : ''}>+ flat</option>
+      <option value="pct" ${mod.type === 'pct' ? 'selected' : ''}>% increase (round up)</option>
+    </select>
+    <input class="field-input" placeholder="Value" type="number" data-m="value" value="${mod.value ?? ''}" style="flex:1">
+    <button class="delete-item-btn" data-remove title="Remove modifier">✕</button>
+  `;
+  row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
+  row.readModifier = function () {
+    return {
+      target: row.querySelector('[data-m="target"]').value,
+      type: row.querySelector('[data-m="type"]').value,
+      value: parseInt(row.querySelector('[data-m="value"]').value) || 0
+    };
+  };
+  return row;
+}
+
 function renderPerkForm(existingPerk) {
   const container = document.getElementById('perk-form-container');
   container.innerHTML = '';
@@ -614,6 +651,10 @@ function renderPerkForm(existingPerk) {
       <label class="field-label">Effect</label>
       <textarea class="field-input" id="p-effect">${escHtml(existingPerk?.effect || '')}</textarea>
     </div>
+    <div class="section-header mt-md">Stat Modifiers (optional)</div>
+    <p class="campaign-note">Automatic adjustments to calculated stats (e.g. Tough as Nails: Injury Threshold +25%).</p>
+    <div id="p-modifiers-list"></div>
+    <button class="btn btn-secondary mt-sm" id="p-add-modifier-btn">＋ Add Modifier</button>
     <div class="section-header mt-md">Granted Action (optional)</div>
     <div class="field-group">
       <label class="field-label">Type</label>
@@ -640,6 +681,12 @@ function renderPerkForm(existingPerk) {
     </div>
   `;
   container.appendChild(form);
+
+  const modifiersList = document.getElementById('p-modifiers-list');
+  (existingPerk?.modifiers || []).forEach(m => modifiersList.appendChild(buildModifierRowForm(m)));
+  document.getElementById('p-add-modifier-btn').addEventListener('click', () => {
+    modifiersList.appendChild(buildModifierRowForm());
+  });
 
   function updateActionVisibility() {
     const show = document.getElementById('p-action-type').value !== 'none';
@@ -668,13 +715,18 @@ function renderPerkForm(existingPerk) {
       text: document.getElementById('p-action-text').value.trim()
     };
 
+    const modifiers = Array.from(modifiersList.children)
+      .map(row => row.readModifier())
+      .filter(m => m.value !== 0);
+
     WeaponStore.saveCustomPerk({
       id,
       name,
       level: parseInt(document.getElementById('p-level').value) || 1,
       prerequisite: document.getElementById('p-prerequisite').value.trim(),
       effect: document.getElementById('p-effect').value.trim(),
-      action
+      action,
+      ...(modifiers.length ? { modifiers } : {})
     });
 
     container.innerHTML = '';

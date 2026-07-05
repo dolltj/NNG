@@ -532,8 +532,20 @@ function openMoveModal(charId) {
 // -----------------------------------------------
 // OPEN A CHARACTER
 // -----------------------------------------------
+// Perks added before the modifiers feature (or via import) were copied
+// without their modifiers — refresh them from the current dictionary by
+// name so old sheets get the mechanical effects without re-adding perks.
+function backfillPerkModifiers(char) {
+  (char.perks || []).forEach(perk => {
+    if (perk.modifiers) return;
+    const def = (PERKS_CONFIG || []).find(p => p.name === perk.name);
+    if (def && def.modifiers) perk.modifiers = def.modifiers;
+  });
+}
+
 function openCharacter(id) {
   ACTIVE_ID = id;
+  backfillPerkModifiers(getChar());
   VIEW_ONLY = !canEditCharacter(getChar(), CURRENT_USER && CURRENT_USER.id, CAMPAIGNS_BY_ID);
   localStorage.setItem(STORAGE_ACTIVE_KEY, id);
   document.getElementById('roster-screen').style.display = 'none';
@@ -628,6 +640,7 @@ function renderSheet() {
   renderTabInfo(char);
   renderTabAbilities(char);
   renderTabCombat(char);
+  renderTabActions(char);
   renderTabPsycasts(char);
   renderTabEquipment(char);
   renderTabNotes(char);
@@ -688,6 +701,11 @@ function renderTabNav() {
 function switchTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tabId));
+  if (tabId === 'tab-actions' && getChar()) {
+    // Weapons/perks may have changed on other tabs since the last render.
+    renderTabActions(getChar());
+    applyViewOnlyMode();
+  }
 }
 
 // -----------------------------------------------
@@ -1128,6 +1146,7 @@ function longRest() {
 
 function recalcDerivedStats() {
   renderTabAbilities(getChar());
+  renderTabCombat(getChar()); // Speed/Initiative chips depend on stats and perk modifiers
 }
 
 // -----------------------------------------------
@@ -1315,7 +1334,7 @@ function buildActionRow(weaponInst, resolved, action) {
     row.querySelector('.weapon-reload-btn').addEventListener('click', () => {
       weaponInst.ammo.current = resolved.magazine_size;
       scheduleSave();
-      renderWeaponsList(getChar());
+      refreshWeaponViews(); // ammo shows on both Combat and Actions tabs
     });
     return row;
   }
@@ -1365,7 +1384,7 @@ function buildActionRow(weaponInst, resolved, action) {
     if (hasAmmo && action.ammo_cost) {
       weaponInst.ammo.current = Math.max(0, weaponInst.ammo.current - action.ammo_cost);
       scheduleSave();
-      renderWeaponsList(getChar());
+      refreshWeaponViews(); // ammo shows on both Combat and Actions tabs
     }
   });
 
@@ -1393,10 +1412,15 @@ function buildCombatStatsRow(char) {
   chips.forEach(chip => {
     const el = document.createElement('div');
     el.className = 'combat-stat-chip';
+    // Perks can raise Speed (e.g. Speed Freak). The input keeps the player's
+    // base value; the effective total renders beside it when they differ.
+    const effSpeed = chip.field === 'speed' ? applyPerkModifiers(char, 'speed', char.speed) : null;
+    const suffix = (effSpeed != null && effSpeed !== char.speed)
+      ? `<span title="Base ${char.speed} + perk modifiers">→ ${effSpeed}</span>` : '';
     el.innerHTML = `
       <span class="combat-stat-chip-label">${chip.label}</span>
-      <span class="combat-stat-chip-value">
-        <input type="number" value="${chip.value}" data-combat-field="${chip.field}" style="width:48px">
+      <span class="combat-stat-chip-value combat-stat-chip-value-row">
+        <input type="number" value="${chip.value}" data-combat-field="${chip.field}" style="width:48px">${suffix}
       </span>`;
     el.querySelector('input').addEventListener('change', e => {
       const v = parseInt(e.target.value) || 0;
@@ -1422,7 +1446,7 @@ function buildCombatStatsRow(char) {
   initEl.querySelector('#roll-initiative-btn').addEventListener('click', e => {
     const agi = getChar().core_stats.agility ?? 0;
     const bonus = getChar().initiative_bonus ?? 0;
-    const mod = agi + bonus;
+    const mod = applyPerkModifiers(getChar(), 'initiative', agi + bonus);
     const characterName = rollCharacterName(getChar());
     if (e.shiftKey) {
       openAdvantageModal({ label: 'Initiative', baseDieCount: 1, modifier: mod, characterName });
@@ -1467,6 +1491,93 @@ function buildCombatStatsRow(char) {
 // -----------------------------------------------
 // TAB: PSYCASTS
 // -----------------------------------------------
+// -----------------------------------------------
+// TAB: ACTIONS — the "it's my turn" pane.
+// Weapon attacks (rollable, same handlers as the
+// Combat tab), perk-granted actions, and the
+// rulebook's common actions (CONFIG.common_actions).
+// Management (add/remove weapons, attachments)
+// stays on the Combat tab.
+// -----------------------------------------------
+function refreshWeaponViews() {
+  const char = getChar();
+  renderWeaponsList(char);
+  if (document.getElementById('tab-actions').classList.contains('active')) {
+    renderTabActions(char);
+    applyViewOnlyMode();
+  }
+}
+
+function renderTabActions(char) {
+  const panel = document.getElementById('tab-actions');
+  panel.innerHTML = '';
+
+  const addHeader = (text, extra = '') => {
+    const h = document.createElement('div');
+    h.className = `section-header ${extra}`.trim();
+    h.textContent = text;
+    panel.appendChild(h);
+  };
+
+  // --- Weapon attacks ---
+  addHeader('Weapon Attacks');
+  const weapons = (char.weapons || [])
+    .map(inst => ({ inst, resolved: resolveWeapon(inst) }))
+    .filter(w => w.resolved);
+  if (weapons.length === 0) {
+    panel.insertAdjacentHTML('beforeend',
+      '<p class="campaign-note">No weapons equipped — add them on the Combat tab.</p>');
+  }
+  weapons.forEach(({ inst, resolved }) => {
+    const block = document.createElement('div');
+    block.className = 'weapon-card';
+    const ammoHtml = inst.ammo
+      ? `<span class="weapon-card-ammo">${inst.ammo.current}/${resolved.magazine_size}</span>` : '';
+    block.innerHTML = `
+      <div class="weapon-card-header">
+        <div class="weapon-card-title"><span class="weapon-card-label">${escHtml(resolved.label)}</span></div>
+        <div class="weapon-card-header-controls">${ammoHtml}</div>
+      </div>`;
+    const rows = document.createElement('div');
+    rows.className = 'weapon-action-rows';
+    resolved.actions.forEach(action => {
+      const rowEl = buildActionRow(inst, resolved, action);
+      if (rowEl) rows.appendChild(rowEl);
+    });
+    block.appendChild(rows);
+    panel.appendChild(block);
+  });
+
+  // --- Perk actions, then common rulebook actions, grouped by type ---
+  const groups = { 'Action': [], 'Quick Action': [], 'Reaction': [] };
+  (char.perks || []).forEach(perk => {
+    const a = perk.action;
+    if (a && a.type && groups[a.type]) {
+      groups[a.type].push({ label: a.label, text: a.text, source: perk.name });
+    }
+  });
+  (CONFIG.common_actions || []).forEach(a => {
+    if (groups[a.type]) groups[a.type].push({ label: a.label, text: a.text, common: true });
+  });
+
+  [['Action', 'Actions'], ['Quick Action', 'Quick Actions'], ['Reaction', 'Reactions']].forEach(([type, title]) => {
+    const entries = groups[type];
+    if (entries.length === 0) return;
+    addHeader(title, 'mt-md');
+    const list = document.createElement('div');
+    list.className = 'action-card-list';
+    entries.forEach(a => {
+      const card = document.createElement('div');
+      card.className = 'action-card' + (a.common ? ' action-card-common' : '');
+      card.innerHTML = `
+        <div class="action-card-title">${escHtml(a.label)}${a.source ? ` <span class="action-card-source">· ${escHtml(a.source)}</span>` : ''}</div>
+        <div class="action-card-text">${escHtml(a.text || '')}</div>`;
+      list.appendChild(card);
+    });
+    panel.appendChild(list);
+  });
+}
+
 function renderTabPsycasts(char) {
   const panel = document.getElementById('tab-psycasts');
   panel.innerHTML = `<div class="section-header">Psycasts <span style="color:var(--text-muted);font-size:0.8rem">(${(char.psycasts || []).length}/14)</span></div>
@@ -1774,6 +1885,7 @@ function buildPerksList(container, char) {
     `;
     row.querySelector('.delete-item-btn').addEventListener('click', () => {
       getChar().perks.splice(i, 1);
+      recalcDerivedStats(); // removing a perk can lower HP max/IT/Speed
       scheduleSave();
       renderTabInfo(getChar());
     });
@@ -1832,12 +1944,15 @@ function buildPerksList(container, char) {
     const def = (PERKS_CONFIG || []).find(p => p.id === perkId);
     if (!def) return;
     getChar().perks.push({
+      id: def.id,
       name: def.name,
       description: '',
       prerequisite: def.prerequisite,
       effect: def.effect,
-      action: def.action
+      action: def.action,
+      modifiers: def.modifiers
     });
+    recalcDerivedStats(); // perk modifiers can change HP/IT/etc. immediately
     scheduleSave();
     renderTabInfo(getChar());
   });

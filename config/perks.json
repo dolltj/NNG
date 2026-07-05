@@ -21,7 +21,8 @@
     "level": 1,
     "prerequisite": "Level 1",
     "effect": "Your Injury Threshold increases by 25% (round up).",
-    "action": null
+    "action": null,
+    "modifiers": [{ "target": "injury_threshold", "type": "pct", "value": 25 }]
   },
   {
     "id": "interceptor",
@@ -37,7 +38,8 @@
     "level": 2,
     "prerequisite": "Level 2",
     "effect": "Your Speed increases by 2. In addition, your movement ignores the movement penalty of difficult terrain when you take the Hustle action.",
-    "action": null
+    "action": null,
+    "modifiers": [{ "target": "speed", "type": "add", "value": 2 }]
   },
   {
     "id": "tactician",

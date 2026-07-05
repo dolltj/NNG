@@ -43,5 +43,23 @@
     { "id": "stealth",           "label": "Stealth" },
     { "id": "streetwise",        "label": "Streetwise" },
     { "id": "survival",          "label": "Survival" }
+  ],
+  "common_actions": [
+    { "type": "Action", "label": "Attack", "text": "Make an attack with a weapon or an unarmed strike." },
+    { "type": "Action", "label": "Hustle", "text": "Move up to your Speed." },
+    { "type": "Action", "label": "Charge", "text": "Move up to your Speed in a straight line toward a target outside your Engagement Range, then make one melee attack." },
+    { "type": "Action", "label": "Dodge", "text": "Until the start of your next turn, Attack Rolls against you have Disadvantage. This benefit ends immediately if you take damage." },
+    { "type": "Action", "label": "Defensive Stance", "text": "Until the start of your next turn, melee Attack Rolls against you have Disadvantage. You may also Riposte if your parrying weapon allows it." },
+    { "type": "Action", "label": "Shield Wall", "text": "Raise your shield. Until the start of your next turn, damage from attacks that hit you is dealt to your shield instead." },
+    { "type": "Action", "label": "Help", "text": "Grant Advantage to another character's Skill Check or Attack Roll." },
+    { "type": "Action", "label": "Activate", "text": "Use a psychic ability, item, or special feature." },
+    { "type": "Action", "label": "Ready", "text": "Prepare an Action triggered by a specific event. When you perform it, your Initiative changes to that point in the turn order." },
+    { "type": "Action", "label": "Interact", "text": "Manipulate an object or terrain feature within Engagement Range." },
+    { "type": "Action", "label": "Grapple", "text": "Attempt to grapple a creature within Engagement Range." },
+    { "type": "Action", "label": "Shove", "text": "Attempt to push a creature within Engagement Range." },
+    { "type": "Quick Action", "label": "Take Cover", "text": "Move into cover provided by terrain within 1 space." },
+    { "type": "Quick Action", "label": "Tactical Shift", "text": "Move 1 space in any direction. Cannot move you into or out of Engagement Range with a hostile creature." },
+    { "type": "Quick Action", "label": "Stand Up", "text": "Remove the Prone condition from yourself." },
+    { "type": "Reaction", "label": "Opportunity Attack", "text": "When a character you can see enters or leaves your Engagement Range: make one melee attack against them. Not provoked by Tactical Shift or forced movement." }
   ]
 }
