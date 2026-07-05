@@ -44,6 +44,7 @@
     { "id": "streetwise",        "label": "Streetwise" },
     { "id": "survival",          "label": "Survival" }
   ],
+  "conditions": ["Blinded", "Exhausted", "Flanked", "Grappled", "Incapacitated", "Prone", "Restrained", "Silenced"],
   "common_actions": [
     { "type": "Action", "label": "Hustle", "text": "Move up to your Speed." },
     { "type": "Action", "label": "Charge", "text": "Move up to your Speed in a straight line toward a target outside your Engagement Range, then make one melee attack." },

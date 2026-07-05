@@ -172,6 +172,7 @@ function buildDefaultCharacter(id) {
     origin_perk:  { name: '', description: '' },
     injuries:           [],
     critical_injuries:  [],
+    conditions:         [],
     weapons:      [],
     psycasts:     [],
     equipment:    [],
@@ -857,8 +858,22 @@ function renderTabAbilities(char) {
     onChange: () => renderTabAbilities(getChar())
   });
 
-  // --- Critical Injuries ---
-  addSectionHeader('Critical Injuries', 'mt-md');
+  // --- Major Injuries (stored as critical_injuries for back-compat) ---
+  const majorCount = (char.critical_injuries || []).length;
+  const mjHeader = document.createElement('div');
+  mjHeader.className = 'section-header mt-md';
+  mjHeader.innerHTML = `Major Injuries
+    <button class="ability-roll-btn" id="major-injury-roll-btn"
+      title="Dropping to 0 HP: roll 1d10 + your current Major Injuries and consult the Major Injury table">💀 Roll 1d10${majorCount > 0 ? ` + ${majorCount}` : ''}</button>`;
+  mjHeader.querySelector('#major-injury-roll-btn').addEventListener('click', () => {
+    const n = (getChar().critical_injuries || []).length;
+    window.Roll20Bridge.sendToRoll20({
+      label: 'Major Injury (0 HP)',
+      formula: n > 0 ? `1d10 + ${n}` : '1d10',
+      characterName: rollCharacterName(getChar())
+    });
+  });
+  panel.appendChild(mjHeader);
   const critInjuriesWrap = document.createElement('div');
   critInjuriesWrap.id = 'critical-injuries-list';
   panel.appendChild(critInjuriesWrap);
@@ -866,7 +881,7 @@ function renderTabAbilities(char) {
     maxCount: Infinity,
     secondFieldLabel: 'Description',
     secondFieldType: 'text',
-    addButtonLabel: '+ Add Critical Injury',
+    addButtonLabel: '+ Add Major Injury',
     onChange: () => renderTabAbilities(getChar())
   });
 }
@@ -1158,6 +1173,9 @@ function renderTabCombat(char) {
     <div class="section-header">Combat Stats</div>
     <div class="combat-stats-row" id="combat-stats-row"></div>
 
+    <div class="section-header mt-md">Conditions</div>
+    <div class="conditions-row" id="conditions-row"></div>
+
     <div class="section-header mt-md">Weapons</div>
     <div id="weapons-list"></div>
     <div class="flex gap-sm mt-md flex-wrap">
@@ -1170,6 +1188,7 @@ function renderTabCombat(char) {
   `;
 
   buildCombatStatsRow(char);
+  buildConditionsRow(char);
   renderWeaponsList(char);
 
   document.getElementById('add-weapon-btn').addEventListener('click', () => {
@@ -1333,13 +1352,15 @@ function buildActionRow(weaponInst, resolved, action) {
     `;
     row.querySelector('.weapon-reload-btn').addEventListener('click', () => {
       weaponInst.ammo.current = resolved.magazine_size;
+      markActionUsed('actions'); // reloading is an Action
       scheduleSave();
       refreshWeaponViews(); // ammo shows on both Combat and Actions tabs
     });
     return row;
   }
 
-  const notesParts = [];
+  const abilityAtRender = weaponAttackAbility(getChar(), resolved);
+  const notesParts = [`+${abilityAtRender.value} ${abilityAtRender.stat}`];
   if (action.area_of_effect != null) notesParts.push(`AoE ${action.area_of_effect}`);
   if (action.save_dv != null) notesParts.push(`DV ${action.save_dv} negates`);
   const notesText = notesParts.length ? ` (${notesParts.join(', ')})` : '';
@@ -1357,8 +1378,11 @@ function buildActionRow(weaponInst, resolved, action) {
   row.querySelector('.attack-roll-btn').addEventListener('click', e => {
     if (insufficientAmmo) return;
 
-    const modifier = (weaponInst.bonus ?? 0) + (action.hit_bonus || 0);
+    // Recompute at click time — stats can change after the row rendered.
+    const ability = weaponAttackAbility(getChar(), resolved);
+    const modifier = ability.value + (weaponInst.bonus ?? 0) + (action.hit_bonus || 0);
     const label = `${resolved.label} — ${action.label}`;
+    markActionUsed('actions'); // attacking is an Action
     const characterName = rollCharacterName(getChar());
     const isBurstFire = !!action.burst_fire;
     const burstDisadvantageApplies = isBurstFire && !resolved.burst_disadvantage_removed;
@@ -1389,14 +1413,44 @@ function buildActionRow(weaponInst, resolved, action) {
   });
 
   row.querySelector('.damage-roll-btn').addEventListener('click', () => {
+    // NNGRules: melee damage adds the same ability used for the attack;
+    // ranged damage stays bare dice.
+    const ability = weaponAttackAbility(getChar(), resolved);
+    const formula = (ability.melee && ability.value > 0)
+      ? `${action.damage} + ${ability.value}`
+      : action.damage;
     window.Roll20Bridge.sendToRoll20({
       label: `${resolved.label} — ${action.label} Damage`,
-      formula: action.damage,
+      formula,
       characterName: rollCharacterName(getChar())
     });
   });
 
   return row;
+}
+
+// Toggleable condition chips (list from CONFIG.conditions — names only for
+// now; the rules doc hasn't published the definitions section yet).
+function buildConditionsRow(char) {
+  const wrap = document.getElementById('conditions-row');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  if (!char.conditions) char.conditions = [];
+  (CONFIG.conditions || []).forEach(name => {
+    const chip = document.createElement('button');
+    chip.className = 'condition-chip' + (char.conditions.includes(name) ? ' active' : '');
+    chip.textContent = name;
+    chip.addEventListener('click', () => {
+      const c = getChar();
+      if (!c.conditions) c.conditions = [];
+      c.conditions = c.conditions.includes(name)
+        ? c.conditions.filter(x => x !== name)
+        : [...c.conditions, name];
+      scheduleSave();
+      buildConditionsRow(c);
+    });
+    wrap.appendChild(chip);
+  });
 }
 
 function buildCombatStatsRow(char) {
@@ -1511,9 +1565,23 @@ function refreshWeaponViews() {
 // Per-turn action economy (2 Actions, 1 Quick, 1 Reaction). In-memory only —
 // turn pips reset on reload and aren't worth cloud-save churn mid-combat.
 let TURN_TRACKER = {};
+const TURN_PIP_MAX = { actions: 2, quick: 1, reaction: 1 };
 function getTurnTracker(charId) {
   if (!TURN_TRACKER[charId]) TURN_TRACKER[charId] = { actions: 0, quick: 0, reaction: 0 };
   return TURN_TRACKER[charId];
+}
+
+/** Action buttons call this so using an ability marks its pip automatically
+ *  (capped at the pip count — over-spending is the table's business). */
+function markActionUsed(kind) {
+  if (!kind || !ACTIVE_ID) return;
+  const tracker = getTurnTracker(ACTIVE_ID);
+  tracker[kind] = Math.min(TURN_PIP_MAX[kind], (tracker[kind] || 0) + 1);
+  const panel = document.getElementById('tab-actions');
+  if (panel && panel.classList.contains('active')) {
+    renderTabActions(getChar());
+    applyViewOnlyMode();
+  }
 }
 
 function renderTabActions(char) {
@@ -1562,6 +1630,13 @@ function renderTabActions(char) {
     applyViewOnlyMode();
   });
   bar.appendChild(newTurnBtn);
+  if ((char.conditions || []).length > 0) {
+    const cond = document.createElement('span');
+    cond.className = 'turn-tracker-conditions';
+    cond.title = 'Active conditions — toggle them on the Combat tab';
+    cond.textContent = `⚠ ${char.conditions.join(', ')}`;
+    bar.appendChild(cond);
+  }
   panel.appendChild(bar);
 
   // --- Weapon attacks ---
@@ -1594,16 +1669,17 @@ function renderTabActions(char) {
   });
 
   // --- Perk actions, then common rulebook actions, grouped by type ---
+  const pipKindFor = type => type === 'Quick Action' ? 'quick' : type === 'Reaction' ? 'reaction' : 'actions';
   const perkGroups = { 'Action': [], 'Quick Action': [], 'Reaction': [] };
   (char.perks || []).forEach(perk => {
     const a = perk.action;
     if (a && a.type && perkGroups[a.type]) {
-      perkGroups[a.type].push({ label: a.label, text: a.text, source: perk.name });
+      perkGroups[a.type].push({ label: a.label, text: a.text, source: perk.name, pipKind: pipKindFor(a.type) });
     }
   });
   const commonGroups = { 'Action': [], 'Quick Action': [], 'Reaction': [], 'Grapple': [] };
   (CONFIG.common_actions || []).forEach(a => {
-    if (commonGroups[a.type]) commonGroups[a.type].push({ label: a.label, text: a.text, rolls: a.rolls, common: true });
+    if (commonGroups[a.type]) commonGroups[a.type].push({ label: a.label, text: a.text, rolls: a.rolls, common: true, pipKind: pipKindFor(a.type) });
   });
 
   // Roll modifier for an action's 'test' roll. 'best_str_agi' = the rules
@@ -1631,6 +1707,7 @@ function renderTabActions(char) {
       btn.className = 'ability-roll-btn';
       btn.textContent = '📣 Announce';
       btn.addEventListener('click', () => {
+        markActionUsed(a.pipKind);
         window.Roll20Bridge.sendAnnouncement({
           label: `uses ${a.label}`,
           characterName: rollCharacterName(getChar())
@@ -1638,12 +1715,15 @@ function renderTabActions(char) {
       });
       btnRow.appendChild(btn);
     } else {
-      rolls.forEach(r => {
+      rolls.forEach((r, rollIdx) => {
         const btn = document.createElement('button');
         btn.className = 'ability-roll-btn';
         btn.textContent = `🎲 ${r.label}`;
         if (r.kind === 'test' && r.stat === 'best_str_agi') btn.title = 'Rolls 2d10 + your higher of STR / AGI';
         btn.addEventListener('click', e => {
+          // Only the card's primary roll consumes a pip — follow-up rolls
+          // (damage, secondary attacks) are part of the same action.
+          if (rollIdx === 0) markActionUsed(a.pipKind);
           const label = `${a.label} — ${r.label}`;
           const characterName = rollCharacterName(getChar());
           if (r.kind === 'dice') {

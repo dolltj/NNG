@@ -53,6 +53,25 @@ function deriveCarryingCapacity(character) {
 }
 
 /**
+ * Which ability powers an attack with this resolved weapon (NNGRules):
+ * melee weapons use STR, ranged use AGI, and the finesse keyword uses
+ * whichever of the two is higher (the rules give the choice; higher is
+ * strictly better). Melee-ness is derived from the weapon's category
+ * string; unknown categories fall back to ranged/AGI.
+ * Returns { stat: 'STR'|'AGI', value, melee }.
+ */
+function weaponAttackAbility(character, resolvedWeapon) {
+  const cs = character.core_stats || {};
+  const str = cs.strength ?? 0;
+  const agi = cs.agility ?? 0;
+  const melee = /melee/i.test(resolvedWeapon.category || '');
+  if ((resolvedWeapon.tags || []).includes('finesse')) {
+    return str >= agi ? { stat: 'STR', value: str, melee } : { stat: 'AGI', value: agi, melee };
+  }
+  return melee ? { stat: 'STR', value: str, melee: true } : { stat: 'AGI', value: agi, melee: false };
+}
+
+/**
  * A tracked resource's effective max: the derived HP formula for
  * derived_max resources, otherwise the character's stored max
  * (null when the character has no entry / no max set).
@@ -103,7 +122,7 @@ function buildAdvantageFormula(baseDieCount, modifier, advantage = 0, disadvanta
 if (typeof module !== 'undefined') {
   module.exports = {
     applyPerkModifiers, deriveMaxHP, deriveInjuryThreshold, deriveRecoveryModifier,
-    deriveCarryingCapacity, getResourceMax,
+    deriveCarryingCapacity, getResourceMax, weaponAttackAbility,
     buildTestFormula, buildAdvantageFormula
   };
 }

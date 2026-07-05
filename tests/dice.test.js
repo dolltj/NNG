@@ -50,6 +50,34 @@ test('derived stats honor perk modifiers', () => {
   assert.strictEqual(dice.deriveInjuryThreshold(char), Math.ceil(15 * 1.25));
 });
 
+test('weaponAttackAbility: melee uses STR, ranged uses AGI', () => {
+  const char = { core_stats: { strength: 3, agility: 1 } };
+  assert.deepStrictEqual(
+    dice.weaponAttackAbility(char, { category: 'Modern Melee Weapon', tags: [] }),
+    { stat: 'STR', value: 3, melee: true });
+  assert.deepStrictEqual(
+    dice.weaponAttackAbility(char, { category: 'Modern Ranged Weapon', tags: [] }),
+    { stat: 'AGI', value: 1, melee: false });
+});
+
+test('weaponAttackAbility: finesse uses the higher of STR/AGI', () => {
+  const agile = { core_stats: { strength: 1, agility: 4 } };
+  assert.deepStrictEqual(
+    dice.weaponAttackAbility(agile, { category: 'Modern Melee Weapon', tags: ['finesse'] }),
+    { stat: 'AGI', value: 4, melee: true });
+  const strong = { core_stats: { strength: 4, agility: 1 } };
+  assert.deepStrictEqual(
+    dice.weaponAttackAbility(strong, { category: 'Modern Melee Weapon', tags: ['finesse'] }),
+    { stat: 'STR', value: 4, melee: true });
+});
+
+test('weaponAttackAbility: unknown/missing category falls back to ranged/AGI', () => {
+  const char = { core_stats: { strength: 3, agility: 2 } };
+  assert.deepStrictEqual(
+    dice.weaponAttackAbility(char, { tags: [] }),
+    { stat: 'AGI', value: 2, melee: false });
+});
+
 test('buildTestFormula formats positive/negative/zero modifiers', () => {
   assert.strictEqual(dice.buildTestFormula(3), '2d10 + 3');
   assert.strictEqual(dice.buildTestFormula(-2), '2d10 - 2');

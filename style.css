@@ -1530,6 +1530,15 @@ textarea.field-input {
   transition: all var(--transition-fast);
 }
 .turn-pip.used { background: var(--gold-dim); border-color: var(--gold-dim); }
+.turn-tracker-conditions { font-size: 0.75rem; color: var(--color-str); }
+
+.conditions-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.condition-chip {
+  padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; cursor: pointer;
+  border: 1px solid var(--border-mid); background: transparent; color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+.condition-chip.active { background: var(--color-str); border-color: var(--color-str); color: #fff; }
 @media (max-width: 800px) { .action-card-grid { grid-template-columns: 1fr; } }
 
 .admin-item-label {
