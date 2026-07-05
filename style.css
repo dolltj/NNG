@@ -1514,6 +1514,8 @@ textarea.field-input {
 .action-card-source { color: var(--text-muted); font-weight: 400; font-size: 0.75rem; }
 .action-card-text { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
 .action-card-common { opacity: 0.75; }
+.action-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-xs); }
+@media (max-width: 800px) { .action-card-grid { grid-template-columns: 1fr; } }
 
 .admin-item-label {
   flex: 1;

@@ -1560,21 +1560,35 @@ function renderTabActions(char) {
     if (groups[a.type]) groups[a.type].push({ label: a.label, text: a.text, common: true });
   });
 
+  const buildCard = a => {
+    const card = document.createElement('div');
+    card.className = 'action-card' + (a.common ? ' action-card-common' : '');
+    card.innerHTML = `
+      <div class="action-card-title">${escHtml(a.label)}${a.source ? ` <span class="action-card-source">· ${escHtml(a.source)}</span>` : ''}</div>
+      <div class="action-card-text">${escHtml(a.text || '')}</div>`;
+    return card;
+  };
+
   [['Action', 'Actions'], ['Quick Action', 'Quick Actions'], ['Reaction', 'Reactions']].forEach(([type, title]) => {
     const entries = groups[type];
     if (entries.length === 0) return;
     addHeader(title, 'mt-md');
-    const list = document.createElement('div');
-    list.className = 'action-card-list';
-    entries.forEach(a => {
-      const card = document.createElement('div');
-      card.className = 'action-card' + (a.common ? ' action-card-common' : '');
-      card.innerHTML = `
-        <div class="action-card-title">${escHtml(a.label)}${a.source ? ` <span class="action-card-source">· ${escHtml(a.source)}</span>` : ''}</div>
-        <div class="action-card-text">${escHtml(a.text || '')}</div>`;
-      list.appendChild(card);
-    });
-    panel.appendChild(list);
+    // Perk actions get full-width rows; the rulebook's basic actions pack
+    // into a 3-column grid to save vertical space.
+    const perkEntries = entries.filter(a => !a.common);
+    const commonEntries = entries.filter(a => a.common);
+    if (perkEntries.length > 0) {
+      const list = document.createElement('div');
+      list.className = 'action-card-list';
+      perkEntries.forEach(a => list.appendChild(buildCard(a)));
+      panel.appendChild(list);
+    }
+    if (commonEntries.length > 0) {
+      const grid = document.createElement('div');
+      grid.className = 'action-card-grid' + (perkEntries.length ? ' mt-sm' : '');
+      commonEntries.forEach(a => grid.appendChild(buildCard(a)));
+      panel.appendChild(grid);
+    }
   });
 }
 
