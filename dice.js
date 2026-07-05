@@ -8,19 +8,35 @@
  * NNG derived stats — pure formulas off core_stats + level.
  */
 
+/**
+ * Sum a character's perk modifiers for one target stat.
+ * Modifier shape: { target, type: 'add'|'pct', value } on perk.modifiers.
+ * Flat adds apply to the base first; then each pct increase applies with
+ * round-up (NNGRules wording: "increases by 25% (round up)").
+ */
+function applyPerkModifiers(character, target, base) {
+  const mods = [];
+  (character.perks || []).forEach(p =>
+    (p.modifiers || []).forEach(m => { if (m.target === target) mods.push(m); }));
+  let total = base;
+  mods.forEach(m => { if (m.type === 'add') total += (m.value || 0); });
+  mods.forEach(m => { if (m.type === 'pct') total = Math.ceil(total * (1 + (m.value || 0) / 100)); });
+  return total;
+}
+
 /** Max HP = 50 + (STR + FOR) * level */
 function deriveMaxHP(character) {
   const str  = character.core_stats?.strength  ?? 0;
   const fort = character.core_stats?.fortitude ?? 0;
   const level = character.level || 1;
-  return 50 + (str + fort) * level;
+  return applyPerkModifiers(character, 'max_hp', 50 + (str + fort) * level);
 }
 
 /** Injury Threshold = 10 + STR + FOR (NNGRules: "Injury Threshold") */
 function deriveInjuryThreshold(character) {
   const str  = character.core_stats?.strength  ?? 0;
   const fort = character.core_stats?.fortitude ?? 0;
-  return 10 + str + fort;
+  return applyPerkModifiers(character, 'injury_threshold', 10 + str + fort);
 }
 
 /** Recovery is a ROLL (1d10 + FOR + WIL, on a Short Rest); this is its
@@ -28,12 +44,12 @@ function deriveInjuryThreshold(character) {
 function deriveRecoveryModifier(character) {
   const fort = character.core_stats?.fortitude ?? 0;
   const wil  = character.core_stats?.willpower ?? 0;
-  return fort + wil;
+  return applyPerkModifiers(character, 'recovery', fort + wil);
 }
 
 /** Carrying Capacity = 10 + STR */
 function deriveCarryingCapacity(character) {
-  return 10 + (character.core_stats?.strength ?? 0);
+  return applyPerkModifiers(character, 'carrying_capacity', 10 + (character.core_stats?.strength ?? 0));
 }
 
 /**
@@ -86,7 +102,7 @@ function buildAdvantageFormula(baseDieCount, modifier, advantage = 0, disadvanta
 // Node export for unit testing; no-op in the browser (no `module` global there).
 if (typeof module !== 'undefined') {
   module.exports = {
-    deriveMaxHP, deriveInjuryThreshold, deriveRecoveryModifier,
+    applyPerkModifiers, deriveMaxHP, deriveInjuryThreshold, deriveRecoveryModifier,
     deriveCarryingCapacity, getResourceMax,
     buildTestFormula, buildAdvantageFormula
   };
