@@ -1508,6 +1508,14 @@ function refreshWeaponViews() {
   }
 }
 
+// Per-turn action economy (2 Actions, 1 Quick, 1 Reaction). In-memory only —
+// turn pips reset on reload and aren't worth cloud-save churn mid-combat.
+let TURN_TRACKER = {};
+function getTurnTracker(charId) {
+  if (!TURN_TRACKER[charId]) TURN_TRACKER[charId] = { actions: 0, quick: 0, reaction: 0 };
+  return TURN_TRACKER[charId];
+}
+
 function renderTabActions(char) {
   const panel = document.getElementById('tab-actions');
   panel.innerHTML = '';
@@ -1518,6 +1526,43 @@ function renderTabActions(char) {
     h.textContent = text;
     panel.appendChild(h);
   };
+
+  // --- Turn tracker ---
+  const tracker = getTurnTracker(char.id);
+  const bar = document.createElement('div');
+  bar.className = 'turn-tracker';
+  [
+    { key: 'actions',  label: 'Actions',  count: 2 },
+    { key: 'quick',    label: 'Quick',    count: 1 },
+    { key: 'reaction', label: 'Reaction', count: 1 }
+  ].forEach(g => {
+    const group = document.createElement('span');
+    group.className = 'turn-tracker-group';
+    group.innerHTML = `<span class="turn-tracker-label">${g.label}</span>`;
+    for (let i = 0; i < g.count; i++) {
+      const pip = document.createElement('button');
+      pip.className = 'turn-pip' + (tracker[g.key] > i ? ' used' : '');
+      pip.title = `${g.label} — click to mark used / available`;
+      pip.addEventListener('click', () => {
+        tracker[g.key] = tracker[g.key] > i ? i : i + 1;
+        renderTabActions(getChar());
+        applyViewOnlyMode();
+      });
+      group.appendChild(pip);
+    }
+    bar.appendChild(group);
+  });
+  const newTurnBtn = document.createElement('button');
+  newTurnBtn.className = 'btn btn-secondary';
+  newTurnBtn.textContent = '↻ New Turn';
+  newTurnBtn.title = 'Reset all pips. Rules note: you may trade 1 Action for 2 Quick Actions — track that however suits you.';
+  newTurnBtn.addEventListener('click', () => {
+    TURN_TRACKER[char.id] = { actions: 0, quick: 0, reaction: 0 };
+    renderTabActions(getChar());
+    applyViewOnlyMode();
+  });
+  bar.appendChild(newTurnBtn);
+  panel.appendChild(bar);
 
   // --- Weapon attacks ---
   addHeader('Weapon Attacks');

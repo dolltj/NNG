@@ -1516,6 +1516,20 @@ textarea.field-input {
 .action-card-common { opacity: 0.75; }
 .action-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-xs); }
 .action-card-buttons { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+
+.turn-tracker {
+  display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap;
+  margin-bottom: var(--space-sm); padding: var(--space-sm);
+  background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+}
+.turn-tracker-group { display: flex; align-items: center; gap: 5px; }
+.turn-tracker-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.turn-pip {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--gold); background: transparent; cursor: pointer; padding: 0;
+  transition: all var(--transition-fast);
+}
+.turn-pip.used { background: var(--gold-dim); border-color: var(--gold-dim); }
 @media (max-width: 800px) { .action-card-grid { grid-template-columns: 1fr; } }
 
 .admin-item-label {
