@@ -54,11 +54,24 @@
     { "type": "Action", "label": "Activate", "text": "Use a psychic ability, item, or special feature." },
     { "type": "Action", "label": "Ready", "text": "Prepare an Action triggered by a specific event. When you perform it, your Initiative changes to that point in the turn order." },
     { "type": "Action", "label": "Interact", "text": "Manipulate an object or terrain feature within Engagement Range." },
-    { "type": "Action", "label": "Grapple", "text": "Attempt to grapple a creature within Engagement Range." },
     { "type": "Action", "label": "Shove", "text": "Attempt to push a creature within Engagement Range." },
     { "type": "Quick Action", "label": "Take Cover", "text": "Move into cover provided by terrain within 1 space." },
     { "type": "Quick Action", "label": "Tactical Shift", "text": "Move 1 space in any direction. Cannot move you into or out of Engagement Range with a hostile creature." },
     { "type": "Quick Action", "label": "Stand Up", "text": "Remove the Prone condition from yourself." },
-    { "type": "Reaction", "label": "Opportunity Attack", "text": "When a character you can see enters or leaves your Engagement Range: make one melee attack against them. Not provoked by Tactical Shift or forced movement." }
+    { "type": "Reaction", "label": "Opportunity Attack", "text": "When a character you can see enters or leaves your Engagement Range: make one melee attack against them. Not provoked by Tactical Shift or forced movement." },
+    { "type": "Grapple", "label": "Initiate Grapple", "text": "1 Action; requires a free hand; target within Engagement Range. Both participants make a Grapple Test (2d10 + STR or AGI) — the winner controls the grapple. The roll becomes the DV the target must equal or beat; the target may choose to fail. If the target wins without a free hand, the grapple ends instead. Grappled: Speed 0; attackers have Advantage against grappled characters.",
+      "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }] },
+    { "type": "Grapple", "label": "Contest Control", "text": "1 Action. Make a Grapple Test against the other participant; the winner becomes the controller.",
+      "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }] },
+    { "type": "Grapple", "label": "Choke", "text": "1 Action, Range 1. Win a Grapple Test: 2d6 damage directly to the target's Hit Points; the target then makes a Fortitude Save (DV 13) or gains the Silenced condition.",
+      "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }, { "label": "2d6 Choke", "kind": "dice", "formula": "2d6" }] },
+    { "type": "Grapple", "label": "Drag", "text": "1 Action, Range 1. Win a Grapple Test: move up to 4 spaces, dragging the target with you. Ignores the Grappled Speed reduction.",
+      "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }] },
+    { "type": "Grapple", "label": "Human Shield", "text": "1 Action, Range 1. Win a Grapple Test: use the target as a shield against incoming damage until the start of your next turn or until you lose control. The target takes damage as a shield used by the controller. A dead target is considered an object.",
+      "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }] },
+    { "type": "Grapple", "label": "Pin", "text": "1 Action, Range 1. Win a Grapple Test: inflict the Restrained condition on the target. You may also choose to knock the target Prone.",
+      "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }] },
+    { "type": "Grapple", "label": "Toss", "text": "1 Action, Range 1. Win a Grapple Test: throw a target your size or smaller up to your Strength score in spaces. If thrown into a similar-or-smaller creature, make a STR Attack Roll opposed by that creature's Defense Roll — on a hit both take 2d6 damage. The thrown target lands Prone. Ends the grapple.",
+      "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }, { "label": "STR Attack", "kind": "test", "stat": "strength" }, { "label": "2d6 Toss", "kind": "dice", "formula": "2d6" }] }
   ]
 }

@@ -59,6 +59,41 @@
     }
   }
 
+  /**
+   * Diceless notification ("X uses Dodge"). Beyond20's API only speaks
+   * rolls, so that path sends a custom roll with formula 0 — it reads as a
+   * pure announcement in chat. The clipboard fallback copies a true /em
+   * emote with no dice at all.
+   */
+  function sendAnnouncement(data) {
+    _logRoll({ label: data.label, formula: '—' });
+    if (_beyond20Available) {
+      document.dispatchEvent(new CustomEvent('Beyond20_SendMessage', {
+        bubbles: true,
+        detail: [{
+          action: 'roll',
+          type: 'custom',
+          character: {
+            name: data.characterName || 'Unknown',
+            source: 'Character Vault',
+            type: 'Custom',
+            url: location.href
+          },
+          roll: '0',
+          name: data.label
+        }]
+      }));
+      showRollToast('📣 Announced in Roll20!', 'success');
+    } else {
+      _copyToClipboard(`/em ${data.characterName || 'Character'} — ${data.label}`).then(ok => {
+        showRollToast(
+          ok ? '📣 Announcement copied! Paste into Roll20 chat (Ctrl+V)' : '⚠️ Could not copy — install Beyond20 for auto-send',
+          ok ? 'info' : 'warn'
+        );
+      });
+    }
+  }
+
   // -----------------------------------------------
   // Recent-rolls log
   // A small persistent panel (separate from the
@@ -238,5 +273,5 @@
   }
 
   // Expose public API
-  window.Roll20Bridge = { sendToRoll20, showRollToast, isAvailable: () => _beyond20Available };
+  window.Roll20Bridge = { sendToRoll20, sendAnnouncement, showRollToast, isAvailable: () => _beyond20Available };
 })();

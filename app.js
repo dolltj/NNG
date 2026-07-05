@@ -1549,7 +1549,7 @@ function renderTabActions(char) {
   });
 
   // --- Perk actions, then common rulebook actions, grouped by type ---
-  const groups = { 'Action': [], 'Quick Action': [], 'Reaction': [] };
+  const groups = { 'Action': [], 'Quick Action': [], 'Reaction': [], 'Grapple': [] };
   (char.perks || []).forEach(perk => {
     const a = perk.action;
     if (a && a.type && groups[a.type]) {
@@ -1557,8 +1557,17 @@ function renderTabActions(char) {
     }
   });
   (CONFIG.common_actions || []).forEach(a => {
-    if (groups[a.type]) groups[a.type].push({ label: a.label, text: a.text, common: true });
+    if (groups[a.type]) groups[a.type].push({ label: a.label, text: a.text, rolls: a.rolls, common: true });
   });
+
+  // Roll modifier for an action's 'test' roll. 'best_str_agi' = the rules
+  // let the roller pick STR or AGI, and the higher score is always the
+  // right pick — the button tooltip names which one applied.
+  const testStat = statId => {
+    const cs = getChar().core_stats || {};
+    if (statId === 'best_str_agi') return Math.max(cs.strength ?? 0, cs.agility ?? 0);
+    return cs[statId] ?? 0;
+  };
 
   const buildCard = a => {
     const card = document.createElement('div');
@@ -1566,10 +1575,50 @@ function renderTabActions(char) {
     card.innerHTML = `
       <div class="action-card-title">${escHtml(a.label)}${a.source ? ` <span class="action-card-source">· ${escHtml(a.source)}</span>` : ''}</div>
       <div class="action-card-text">${escHtml(a.text || '')}</div>`;
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'action-card-buttons';
+    const rolls = a.rolls || [];
+    if (rolls.length === 0) {
+      // No dice involved — the button just announces the action in Roll20.
+      const btn = document.createElement('button');
+      btn.className = 'ability-roll-btn';
+      btn.textContent = '📣 Announce';
+      btn.addEventListener('click', () => {
+        window.Roll20Bridge.sendAnnouncement({
+          label: `uses ${a.label}`,
+          characterName: rollCharacterName(getChar())
+        });
+      });
+      btnRow.appendChild(btn);
+    } else {
+      rolls.forEach(r => {
+        const btn = document.createElement('button');
+        btn.className = 'ability-roll-btn';
+        btn.textContent = `🎲 ${r.label}`;
+        if (r.kind === 'test' && r.stat === 'best_str_agi') btn.title = 'Rolls 2d10 + your higher of STR / AGI';
+        btn.addEventListener('click', e => {
+          const label = `${a.label} — ${r.label}`;
+          const characterName = rollCharacterName(getChar());
+          if (r.kind === 'dice') {
+            window.Roll20Bridge.sendToRoll20({ label, formula: r.formula, characterName });
+            return;
+          }
+          const mod = testStat(r.stat);
+          if (e.shiftKey) {
+            openAdvantageModal({ label, baseDieCount: 2, modifier: mod, characterName });
+            return;
+          }
+          window.Roll20Bridge.sendToRoll20({ label, formula: buildTestFormula(mod), characterName });
+        });
+        btnRow.appendChild(btn);
+      });
+    }
+    card.appendChild(btnRow);
     return card;
   };
 
-  [['Action', 'Actions'], ['Quick Action', 'Quick Actions'], ['Reaction', 'Reactions']].forEach(([type, title]) => {
+  [['Action', 'Actions'], ['Quick Action', 'Quick Actions'], ['Reaction', 'Reactions'], ['Grapple', 'Grappling']].forEach(([type, title]) => {
     const entries = groups[type];
     if (entries.length === 0) return;
     addHeader(title, 'mt-md');
