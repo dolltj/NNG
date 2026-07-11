@@ -1864,6 +1864,130 @@ textarea.field-input {
 }
 
 /* =============================================
+   ENCOUNTER TRACKER — ENHANCED STYLES
+   (HP editable inputs, pip trackers, collapsible
+    action groups, stat roll buttons)
+   ============================================= */
+
+/* HP edit row inside card */
+.enc-hp-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+.enc-hp-input {
+  width: 52px;
+  padding: 2px 4px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.enc-hp-max {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Pip tracker row in card */
+.enc-card-tracker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.enc-pip-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.enc-pip-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-right: 1px;
+}
+.enc-pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.enc-pip.used {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.enc-pip:hover {
+  border-color: var(--gold);
+}
+
+/* Detail panel turn tracker */
+.enc-detail-tracker {
+  margin-bottom: 12px;
+}
+.enc-detail-tracker-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-hover);
+  border-radius: var(--radius);
+}
+
+/* Stat chip — roll button next to value */
+.enc-stat-rollable {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.enc-stat-roll-btn {
+  font-size: 0.7rem;
+  padding: 1px 4px;
+  line-height: 1;
+}
+
+/* Skill chips — rollable */
+.enc-rollable {
+  cursor: pointer;
+}
+.enc-rollable:hover {
+  border-color: var(--gold);
+  background: var(--bg-hover);
+}
+
+/* Collapsible action groups */
+.enc-action-group {
+  margin-top: 8px;
+}
+.enc-group-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+}
+.enc-collapse-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.enc-collapse-btn:hover { color: var(--gold); }
+
+/* Attack formula hint in action meta */
+.enc-formula-hint {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.82em;
+}
+
+/* =============================================
    RESPONSIVE TWEAKS
    ============================================= */
 @media (max-width: 768px) {
