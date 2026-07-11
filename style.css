@@ -1864,6 +1864,48 @@ textarea.field-input {
 }
 
 /* =============================================
+   ENEMY FORM — gear picker cards + attack rows
+   ============================================= */
+
+.en-gear-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 4px;
+}
+.en-gear-card-name {
+  font-weight: 600;
+  flex: 2;
+}
+.en-gear-card-tags {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex: 3;
+}
+
+.en-attack-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--bg-hover);
+}
+.en-attack-row-main,
+.en-attack-row-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.en-attack-row-sub {
+  margin-top: 6px;
+}
+
+/* =============================================
    ENCOUNTER TRACKER — ENHANCED STYLES
    (HP editable inputs, pip trackers, collapsible
     action groups, stat roll buttons)

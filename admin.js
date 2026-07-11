@@ -9,8 +9,9 @@
 'use strict';
 
 let BASE_WEAPON_CONFIG = null;
-let BASE_PERK_CONFIG = null;
-let BASE_ENEMY_CONFIG = null;
+let BASE_PERK_CONFIG   = null;
+let BASE_ENEMY_CONFIG  = null;
+let NNG_CONFIG         = null;
 
 // The CDN SDK may be unreachable (offline, blockers). Local drafting works
 // without it; only sign-in/publish need it, and they alert if it's missing.
@@ -19,10 +20,11 @@ const sb = (typeof supabase !== 'undefined')
   : null;
 
 window.addEventListener('DOMContentLoaded', async () => {
-  [BASE_WEAPON_CONFIG, BASE_PERK_CONFIG, BASE_ENEMY_CONFIG] = await Promise.all([
+  [BASE_WEAPON_CONFIG, BASE_PERK_CONFIG, BASE_ENEMY_CONFIG, NNG_CONFIG] = await Promise.all([
     window.RemoteConfig.loadConfigWithFallback('weapons', 'config/weapons.json'),
-    window.RemoteConfig.loadConfigWithFallback('perks', 'config/perks.json'),
-    window.RemoteConfig.loadConfigWithFallback('enemies', 'config/enemies.json')
+    window.RemoteConfig.loadConfigWithFallback('perks',   'config/perks.json'),
+    window.RemoteConfig.loadConfigWithFallback('enemies', 'config/enemies.json'),
+    window.RemoteConfig.loadConfigWithFallback('nng',     'config/nng.json')
   ]);
 
   renderWeaponsList();
@@ -767,46 +769,166 @@ function renderEnemiesList() {
   });
 }
 
+// ---- skill dropdown row ----
 function buildEnemySkillRowForm(skill = {}) {
+  const skillDefs = (NNG_CONFIG?.skills || []);
+  const options   = skillDefs.map(s =>
+    `<option value="${escHtml(s.id)}"${skill.id === s.id || skill.label === s.label ? ' selected' : ''}>${escHtml(s.label)}</option>`
+  ).join('');
+
   const row = document.createElement('div');
   row.className = 'admin-action-row-fields';
   row.innerHTML = `
-    <input class="field-input" placeholder="Skill name" data-s="label" value="${escHtml(skill.label || '')}" style="flex:3">
-    <input class="field-input" placeholder="Ranks" type="number" data-s="ranks" value="${skill.ranks ?? 0}" style="flex:1">
-    <input class="field-input" placeholder="Bonus" type="number" data-s="bonus" value="${skill.bonus ?? 0}" style="flex:1">
+    <select class="field-input" data-s="id" style="flex:3">
+      <option value="">— Select Skill —</option>
+      ${options}
+    </select>
+    <input class="field-input" placeholder="Ranks" type="number" data-s="ranks" value="${skill.ranks ?? 0}" style="flex:1;min-width:60px">
+    <input class="field-input" placeholder="Bonus" type="number" data-s="bonus" value="${skill.bonus ?? 0}" style="flex:1;min-width:60px">
     <button class="delete-item-btn" data-remove title="Remove skill">✕</button>
   `;
+  // If the existing skill was saved before IDs existed, match by label fallback
+  if (!skill.id && skill.label) {
+    const match = skillDefs.find(s => s.label === skill.label);
+    if (match) row.querySelector('[data-s="id"]').value = match.id;
+  }
   row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
   row.readSkill = function () {
-    const label = row.querySelector('[data-s="label"]').value.trim();
+    const id    = row.querySelector('[data-s="id"]').value;
+    const def   = skillDefs.find(s => s.id === id);
+    const label = def?.label || id;
     const ranks = parseInt(row.querySelector('[data-s="ranks"]').value) || 0;
     const bonus = parseInt(row.querySelector('[data-s="bonus"]').value) || 0;
-    return { label, ranks, bonus, total: ranks + bonus };
+    return { id, label, ranks, bonus, total: ranks + bonus };
   };
   return row;
 }
 
-const _ACTION_GROUPS_EXAMPLE = JSON.stringify([
-  {
-    "label": "Axe", "tags": ["versatile"],
-    "actions": [
-      { "label": "Slash", "cost": "1 Action", "range": "1", "notes": "",
-        "rolls": [
-          { "label": "Attack", "kind": "test", "stat": "strength" },
-          { "label": "3d6 Damage", "kind": "dice", "formula": "3d6" }
-        ]
-      }
-    ]
-  }
-], null, 2);
+// ---- catalog weapon → action_group conversion ----
+function _weaponToActionGroup(weapon) {
+  const isFinesse = (weapon.tags || []).includes('finesse');
+  const isMelee   = (weapon.category || '').toLowerCase().includes('melee');
+  const attackStat = isFinesse ? 'best_str_agi' : isMelee ? 'strength' : 'agility';
+  return {
+    label: weapon.label,
+    tags:  weapon.tags || [],
+    actions: (weapon.actions || []).map(a => ({
+      label:  a.label,
+      cost:   '1 Action',
+      range:  String(a.range ?? '1'),
+      notes:  a.damage_type ? `Damage type: ${a.damage_type}` : '',
+      rolls: [
+        { label: 'Attack', kind: 'test', stat: attackStat },
+        ...(a.damage ? [{ label: `${a.damage} Damage`, kind: 'dice', formula: a.damage }] : [])
+      ]
+    }))
+  };
+}
 
+// ---- custom attack row (one attack = one action_group with one action) ----
+const ATTACK_COSTS  = ['1 Action', 'Quick Action', 'Reaction', 'Free Action', 'Full Turn'];
+const ATTACK_STATS  = ['strength', 'agility', 'fortitude', 'willpower', 'best_str_agi', 'none'];
+const ATTACK_STAT_LABELS = { strength:'STR', agility:'AGI', fortitude:'FOR', willpower:'WIL', best_str_agi:'Best STR/AGI', none:'No roll' };
+
+function buildCustomAttackRow(attack = {}) {
+  const costOpts  = ATTACK_COSTS.map(c => `<option${attack.cost  === c ? ' selected' : ''}>${c}</option>`).join('');
+  const statOpts  = ATTACK_STATS.map(s => `<option value="${s}"${(attack.stat || 'strength') === s ? ' selected' : ''}>${ATTACK_STAT_LABELS[s]}</option>`).join('');
+
+  const row = document.createElement('div');
+  row.className = 'en-attack-row';
+  row.innerHTML = `
+    <div class="en-attack-row-main">
+      <input class="field-input" placeholder="Attack name (e.g. Slam)" data-a="label"
+        value="${escHtml(attack.label || '')}" style="flex:3;min-width:120px">
+      <select class="field-input" data-a="cost" style="flex:2;min-width:110px">${costOpts}</select>
+      <input class="field-input" placeholder="Range" data-a="range"
+        value="${escHtml(attack.range || '1')}" style="flex:1;min-width:60px">
+      <button class="delete-item-btn" data-remove title="Remove attack">✕</button>
+    </div>
+    <div class="en-attack-row-sub">
+      <label class="field-label" style="min-width:90px">Attack stat</label>
+      <select class="field-input" data-a="stat" style="flex:2">${statOpts}</select>
+      <input class="field-input" placeholder="Damage (e.g. 3d6)" data-a="damage"
+        value="${escHtml(attack.damage || '')}" style="flex:2">
+      <input class="field-input" placeholder="Tags (comma-sep)" data-a="tags"
+        value="${escHtml((attack.tags || []).join(', '))}" style="flex:2">
+      <input class="field-input" placeholder="Notes" data-a="notes"
+        value="${escHtml(attack.notes || '')}" style="flex:3">
+    </div>
+  `;
+  row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
+  row.readAttack = function () {
+    const label  = row.querySelector('[data-a="label"]').value.trim();
+    const cost   = row.querySelector('[data-a="cost"]').value;
+    const range  = row.querySelector('[data-a="range"]').value.trim() || '1';
+    const stat   = row.querySelector('[data-a="stat"]').value;
+    const damage = row.querySelector('[data-a="damage"]').value.trim();
+    const tags   = row.querySelector('[data-a="tags"]').value.split(',').map(s => s.trim()).filter(Boolean);
+    const notes  = row.querySelector('[data-a="notes"]').value.trim();
+    const rolls  = [];
+    if (stat !== 'none') rolls.push({ label: 'Attack', kind: 'test', stat });
+    if (damage)          rolls.push({ label: `${damage} Damage`, kind: 'dice', formula: damage });
+    return { label, cost, range, stat, damage, tags, notes, rolls };
+  };
+  return row;
+}
+
+// Helper: reconstruct the flat attack shape from an action_group that was
+// originally built by buildCustomAttackRow (label === group label, 1 action).
+function _actionGroupToAttack(group) {
+  const action = group.actions?.[0] || {};
+  const testRoll   = action.rolls?.find(r => r.kind === 'test');
+  const damageRoll = action.rolls?.find(r => r.kind === 'dice');
+  return {
+    label:  group.label,
+    cost:   action.cost || '1 Action',
+    range:  action.range || '1',
+    stat:   testRoll?.stat || 'strength',
+    damage: damageRoll?.formula || '',
+    tags:   group.tags || [],
+    notes:  action.notes || ''
+  };
+}
+
+// ---- weapon gear picker card ----
+function _buildGearCard(weapon, onRemove) {
+  const card = document.createElement('div');
+  card.className = 'en-gear-card';
+  card.dataset.weaponId = weapon.id;
+  card.innerHTML = `
+    <span class="en-gear-card-name">${escHtml(weapon.label)}</span>
+    <span class="en-gear-card-tags">${escHtml((weapon.tags || []).join(', '))}</span>
+    <button class="delete-item-btn" title="Remove">✕</button>
+  `;
+  card.querySelector('.delete-item-btn').addEventListener('click', onRemove);
+  return card;
+}
+
+// ---- main form ----
 function renderEnemyForm(existingEnemy) {
   const container = document.getElementById('enemy-form-container');
   container.innerHTML = '';
   const cs = existingEnemy?.core_stats || {};
-  const actionGroupsJson = existingEnemy?.action_groups
-    ? JSON.stringify(existingEnemy.action_groups, null, 2)
-    : _ACTION_GROUPS_EXAMPLE;
+
+  // Determine which existing action_groups came from the weapon catalog vs custom
+  const allWeapons = WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG).weapons;
+  const weaponById = Object.fromEntries(allWeapons.map(w => [w.id, w]));
+
+  // Existing action_groups split: catalog weapons (matched by label) vs custom attacks
+  // A group is treated as a catalog weapon if its label matches a known weapon label.
+  const weaponByLabel = Object.fromEntries(allWeapons.map(w => [w.label, w]));
+  const existingGroups    = existingEnemy?.action_groups || [];
+  const preselectedWeaponIds = [];
+  const preExistingCustomAttacks = [];
+  existingGroups.forEach(group => {
+    const matched = weaponByLabel[group.label];
+    if (matched) {
+      preselectedWeaponIds.push(matched.id);
+    } else {
+      preExistingCustomAttacks.push(_actionGroupToAttack(group));
+    }
+  });
+
   const gearNotesText = (existingEnemy?.gear_notes || []).join('\n');
 
   const form = document.createElement('div');
@@ -854,14 +976,29 @@ function renderEnemyForm(existingEnemy) {
       <div class="field-group"><label class="field-label">Recovery</label>
         <input class="field-input" id="en-recovery" type="number" value="${existingEnemy?.recovery_val ?? 10}"></div>
     </div>
+
     <div class="section-header mt-md">Skills</div>
     <div id="en-skills-list"></div>
     <button class="btn btn-secondary mt-sm" id="en-add-skill-btn">＋ Add Skill</button>
-    <div class="section-header mt-md">Gear Notes (one per line)</div>
-    <textarea class="field-input" id="en-gear-notes" rows="4">${escHtml(gearNotesText)}</textarea>
-    <div class="section-header mt-md">Action Groups (JSON)</div>
-    <p class="campaign-note">Each group is a gear item with actions. Roll "stat" values: strength, agility, fortitude, willpower, best_str_agi</p>
-    <textarea class="field-input" id="en-action-groups" rows="20" style="font-family:monospace;font-size:0.8rem">${escHtml(actionGroupsJson)}</textarea>
+
+    <div class="section-header mt-md">Gear (Weapons from Catalog)</div>
+    <div id="en-gear-list"></div>
+    <div class="flex gap-sm mt-sm">
+      <select class="field-input" id="en-gear-select" style="flex:1">
+        <option value="">— Add weapon from catalog —</option>
+        ${allWeapons.map(w => `<option value="${escHtml(w.id)}">${escHtml(w.label)} (${escHtml(w.category || '')})</option>`).join('')}
+      </select>
+      <button class="btn btn-secondary" id="en-add-gear-btn">＋ Add</button>
+    </div>
+
+    <div class="section-header mt-md">Custom Attacks</div>
+    <p class="campaign-note">Add attack actions not covered by catalog weapons (e.g. Slam, Frag Grenade).</p>
+    <div id="en-attacks-list"></div>
+    <button class="btn btn-secondary mt-sm" id="en-add-attack-btn">＋ Add Attack</button>
+
+    <div class="section-header mt-md">Gear Notes (freetext — armor tables, ammo, etc.)</div>
+    <textarea class="field-input" id="en-gear-notes" rows="4" placeholder="One note per line">${escHtml(gearNotesText)}</textarea>
+
     <div class="flex gap-sm mt-md">
       <button class="btn btn-primary" id="en-save-btn">Save Enemy</button>
       <button class="btn btn-secondary" id="en-cancel-btn">Cancel</button>
@@ -869,34 +1006,85 @@ function renderEnemyForm(existingEnemy) {
   `;
   container.appendChild(form);
 
+  // ---- Skills ----
   const skillsList = document.getElementById('en-skills-list');
   (existingEnemy?.skills || []).forEach(sk => skillsList.appendChild(buildEnemySkillRowForm(sk)));
   document.getElementById('en-add-skill-btn').addEventListener('click', () => {
     skillsList.appendChild(buildEnemySkillRowForm());
   });
+
+  // ---- Gear picker ----
+  const gearList = document.getElementById('en-gear-list');
+
+  function addGearCard(weaponId) {
+    const weapon = weaponById[weaponId];
+    if (!weapon) return;
+    const card = _buildGearCard(weapon, () => card.remove());
+    gearList.appendChild(card);
+  }
+
+  preselectedWeaponIds.forEach(id => addGearCard(id));
+
+  document.getElementById('en-add-gear-btn').addEventListener('click', () => {
+    const sel = document.getElementById('en-gear-select');
+    if (!sel.value) return;
+    // Don't allow duplicates
+    if (gearList.querySelector(`[data-weapon-id="${sel.value}"]`)) {
+      sel.value = '';
+      return;
+    }
+    addGearCard(sel.value);
+    sel.value = '';
+  });
+
+  // ---- Custom attacks ----
+  const attacksList = document.getElementById('en-attacks-list');
+  preExistingCustomAttacks.forEach(a => attacksList.appendChild(buildCustomAttackRow(a)));
+  document.getElementById('en-add-attack-btn').addEventListener('click', () => {
+    attacksList.appendChild(buildCustomAttackRow());
+    attacksList.lastElementChild.querySelector('[data-a="label"]').focus();
+  });
+
+  // ---- Cancel / Save ----
   document.getElementById('en-cancel-btn').addEventListener('click', () => { container.innerHTML = ''; });
 
   document.getElementById('en-save-btn').addEventListener('click', () => {
     const name = document.getElementById('en-name').value.trim();
     if (!name) { alert('Name is required.'); return; }
 
-    const rawJson = document.getElementById('en-action-groups').value.trim();
-    let action_groups = [];
-    if (rawJson) {
-      try {
-        action_groups = JSON.parse(rawJson);
-        if (!Array.isArray(action_groups)) { alert('Action Groups must be a JSON array [ ... ].'); return; }
-      } catch (err) {
-        alert(`Action Groups JSON is invalid: ${err.message}`);
-        return;
-      }
-    }
+    // Build action_groups: catalog weapons first, then custom attacks
+    const gearWeaponIds = Array.from(gearList.querySelectorAll('[data-weapon-id]'))
+      .map(el => el.dataset.weaponId);
+    const catalogGroups = gearWeaponIds
+      .map(id => weaponById[id])
+      .filter(Boolean)
+      .map(w => _weaponToActionGroup(w));
+
+    const customAttacks = Array.from(attacksList.children)
+      .map(row => row.readAttack())
+      .filter(a => a.label);
+    const customGroups = customAttacks.map(a => ({
+      label:   a.label,
+      tags:    a.tags,
+      actions: [{
+        label:  a.label,
+        cost:   a.cost,
+        range:  a.range,
+        notes:  a.notes,
+        rolls:  a.rolls
+      }]
+    }));
+
+    const action_groups = [...catalogGroups, ...customGroups];
 
     const officialIds = Array.isArray(BASE_ENEMY_CONFIG) ? BASE_ENEMY_CONFIG.map(e => e.id) : [];
-    const customIds = WeaponStore.getCustomEnemies().map(e => e.id).filter(id => id !== existingEnemy?.id);
-    const id = existingEnemy?.id || uniqueId(slugify(name), [...officialIds, ...customIds]);
+    const customIds   = WeaponStore.getCustomEnemies().map(e => e.id).filter(id => id !== existingEnemy?.id);
+    const id          = existingEnemy?.id || uniqueId(slugify(name), [...officialIds, ...customIds]);
 
-    const skills = Array.from(skillsList.children).map(row => row.readSkill()).filter(sk => sk.label);
+    const skills = Array.from(skillsList.children)
+      .map(row => row.readSkill())
+      .filter(sk => sk.id);
+
     const gear_notes = document.getElementById('en-gear-notes').value
       .split('\n').map(s => s.trim()).filter(Boolean);
 
