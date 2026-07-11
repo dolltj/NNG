@@ -1591,6 +1591,279 @@ textarea.field-input {
 .admin-action-row-fields:last-child { margin-bottom: 0; }
 
 /* =============================================
+   ENCOUNTER TRACKER PAGE
+   ============================================= */
+#encounter-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-deepest);
+}
+
+/* Cards row */
+.encounter-cards-row {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding: var(--space-md);
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--border-mid);
+  min-height: 160px;
+  align-items: flex-start;
+}
+
+.encounter-empty-msg {
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  align-self: center;
+  margin: 0 auto;
+}
+
+/* Individual enemy card */
+.encounter-card {
+  min-width: 140px;
+  max-width: 160px;
+  background: var(--bg-card);
+  border: 2px solid var(--border-mid);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  cursor: pointer;
+  position: relative;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.encounter-card:hover { border-color: var(--border-strong); }
+.encounter-card.selected { border-color: var(--gold); box-shadow: 0 0 12px var(--gold-glow); }
+.encounter-card.dead { opacity: 0.5; }
+
+.encounter-card-remove {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0;
+}
+.encounter-card-remove:hover { color: var(--color-hp); }
+
+.encounter-card-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+  padding-right: 14px;
+}
+
+.encounter-card-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.enc-hp-wrap {
+  height: 6px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.enc-hp-bar {
+  height: 100%;
+  background: var(--color-hp);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.enc-hp-text, .enc-dur-text {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Detail panel */
+.encounter-detail {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md) var(--space-lg);
+}
+
+.enc-detail-hdr {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.enc-detail-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.enc-detail-name {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.enc-detail-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.enc-dmg-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.enc-amt-input { width: 72px; }
+
+.btn-danger {
+  background: var(--color-hp);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 700;
+}
+.btn-danger:hover { filter: brightness(1.2); }
+
+.encounter-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.enc-init-row {
+  margin-bottom: var(--space-sm);
+}
+
+/* Skills grid */
+.encounter-skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.encounter-skill-chip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 2px var(--space-sm);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Gear notes */
+.enc-gear-notes {
+  margin: var(--space-xs) 0 var(--space-sm) var(--space-md);
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.enc-gear-notes li { margin-bottom: 2px; }
+
+/* Action group header tags */
+.enc-group-tags {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+/* Enemy action rows */
+.enemy-action-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.enemy-action-row:last-child { border-bottom: none; }
+
+.enemy-action-info {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px var(--space-sm);
+}
+
+.enemy-action-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.enemy-action-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.enemy-action-notes {
+  font-size: 0.75rem;
+  color: var(--gold-dim);
+  font-style: italic;
+  width: 100%;
+}
+
+.enemy-action-btns {
+  display: flex;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Enemy picker modal content */
+.enemy-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-bottom: var(--space-sm);
+}
+
+.enemy-picker-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  width: 100%;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.enemy-picker-btn:hover { border-color: var(--gold); background: var(--bg-hover); }
+.enemy-picker-btn strong { font-size: 0.95rem; }
+
+.enemy-picker-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* =============================================
    RESPONSIVE TWEAKS
    ============================================= */
 @media (max-width: 768px) {

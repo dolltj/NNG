@@ -12,6 +12,7 @@
 
   const STORAGE_KEY = 'ttrpg_custom_weapon_config';
   const PERK_STORAGE_KEY = 'ttrpg_custom_perk_config';
+  const ENEMY_STORAGE_KEY = 'ttrpg_custom_enemies';
   const DELETED_KEY = 'ttrpg_deleted_config_ids';
 
   // -------- staged deletions (tombstones) --------
@@ -24,10 +25,11 @@
       return {
         weapons: Array.isArray(parsed.weapons) ? parsed.weapons : [],
         attachments: Array.isArray(parsed.attachments) ? parsed.attachments : [],
-        perks: Array.isArray(parsed.perks) ? parsed.perks : []
+        perks: Array.isArray(parsed.perks) ? parsed.perks : [],
+        enemies: Array.isArray(parsed.enemies) ? parsed.enemies : []
       };
     } catch {
-      return { weapons: [], attachments: [], perks: [] };
+      return { weapons: [], attachments: [], perks: [], enemies: [] };
     }
   }
 
@@ -89,6 +91,38 @@
     return _applyDeleted(_mergeList(basePerks, _loadPerks()), getDeletedIds('perks'), !!opts.includeDeleted);
   }
 
+  // -------- enemies --------
+  function _loadCustomEnemies() {
+    try {
+      const raw = localStorage.getItem(ENEMY_STORAGE_KEY);
+      const parsed = JSON.parse(raw || 'null');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  }
+
+  function _saveCustomEnemies(list) {
+    localStorage.setItem(ENEMY_STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function getCustomEnemies() { return _loadCustomEnemies(); }
+
+  function saveCustomEnemy(enemy) {
+    const list = _loadCustomEnemies();
+    const idx = list.findIndex(e => e.id === enemy.id);
+    if (idx >= 0) list[idx] = enemy; else list.push(enemy);
+    _saveCustomEnemies(list);
+  }
+
+  function deleteCustomEnemy(id) {
+    _saveCustomEnemies(_loadCustomEnemies().filter(e => e.id !== id));
+  }
+
+  function getEnemiesMergedConfig(baseEnemies, opts = {}) {
+    const base = Array.isArray(baseEnemies) ? baseEnemies : [];
+    const list = _mergeList(base, _loadCustomEnemies());
+    return _applyDeleted(list, getDeletedIds('enemies'), !!opts.includeDeleted);
+  }
+
   function _load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -147,6 +181,7 @@
   function clearAllCustom() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(PERK_STORAGE_KEY);
+    localStorage.removeItem(ENEMY_STORAGE_KEY);
     localStorage.removeItem(DELETED_KEY);
   }
 
@@ -185,7 +220,7 @@
 
   function exportAll() {
     const wa = _load();
-    return { weapons: wa.weapons, attachments: wa.attachments, perks: _loadPerks() };
+    return { weapons: wa.weapons, attachments: wa.attachments, perks: _loadPerks(), enemies: _loadCustomEnemies() };
   }
 
   const api = {
@@ -200,6 +235,10 @@
     saveCustomPerk,
     deleteCustomPerk,
     getPerksMergedConfig,
+    getCustomEnemies,
+    saveCustomEnemy,
+    deleteCustomEnemy,
+    getEnemiesMergedConfig,
     exportAll,
     clearAllCustom,
     markDeleted,

@@ -1,0 +1,100 @@
+[
+  {
+    "id": "goon",
+    "name": "Goon",
+    "subtitle": "Level 1 Raider",
+    "core_stats": { "strength": 0, "agility": 0, "fortitude": 0, "willpower": 0, "size": 1 },
+    "hp_max": 25,
+    "injury_threshold": 10,
+    "helm_max": 30,
+    "armor_max": 60,
+    "speed": 8,
+    "initiative": 0,
+    "morale": 0,
+    "recovery_val": 10,
+    "skills": [
+      { "label": "Athletics",    "ranks": 3, "bonus": 0, "total": 3 },
+      { "label": "Intimidation", "ranks": 3, "bonus": 0, "total": 3 },
+      { "label": "Perception",   "ranks": 3, "bonus": 0, "total": 3 },
+      { "label": "Streetwise",   "ranks": 3, "bonus": 0, "total": 3 }
+    ],
+    "gear_notes": [
+      "Pick one melee weapon: 1/10 Axe or Longsword; 9/10 Club, Knife, or Mace",
+      "Pick one ranged weapon: 1/10 Poor Quality Assault Rifle or Bolt-Action Rifle; 9/10 Autopistol, Machine Pistol, Revolver, or Shotgun",
+      "Pick one body armor: 1/10 Flak Vest (60 Armor); 6/10 Heavy Leathers (30 Armor); 3/10 None",
+      "Pick one extra: 1/10 Frag Grenade; 3/10 Light Ballistic Shield (80 Shield); 6/10 Simple Helmet (30 Helm)"
+    ],
+    "action_groups": [
+      {
+        "label": "Axe", "tags": ["versatile"],
+        "actions": [
+          { "label": "Slash",  "cost": "1 Action", "range": "1", "notes": "",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"3d6 Damage","kind":"dice","formula":"3d6"}] },
+          { "label": "Chop",   "cost": "1 Action", "range": "1", "notes": "+5 Damage on Head Shots",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"2d6 Damage","kind":"dice","formula":"2d6"}] },
+          { "label": "Split",  "cost": "1 Action", "range": "1", "notes": "x2 vs. Shields",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"2d6 Damage","kind":"dice","formula":"2d6"}] }
+        ]
+      },
+      {
+        "label": "Longsword", "tags": ["versatile"],
+        "actions": [
+          { "label": "Slash",    "cost": "1 Action", "range": "1", "notes": "",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"3d6 Damage","kind":"dice","formula":"3d6"}] },
+          { "label": "Thrust",   "cost": "1 Action", "range": "1", "notes": "Piercing",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"2d6 Piercing","kind":"dice","formula":"2d6"}] },
+          { "label": "Mordhau",  "cost": "1 Action", "range": "1", "notes": "Blunt; req. two hands",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"2d6 Blunt","kind":"dice","formula":"2d6"}] }
+        ]
+      },
+      {
+        "label": "Club", "tags": ["light","concealable"],
+        "actions": [
+          { "label": "Bash", "cost": "1 Action", "range": "1", "notes": "Blunt",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"1d6 Blunt","kind":"dice","formula":"1d6"}] },
+          { "label": "Stun", "cost": "1 Action", "range": "1", "notes": "Blunt; target: FOR Save DV 11 or Dazed",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"1d3 Blunt","kind":"dice","formula":"1d3"}] }
+        ]
+      },
+      {
+        "label": "Knife", "tags": ["light","finesse","concealable"],
+        "actions": [
+          { "label": "Slash", "cost": "1 Action", "range": "1", "notes": "",
+            "rolls": [{"label":"Attack","kind":"test","stat":"best_str_agi"},{"label":"1d6 Damage","kind":"dice","formula":"1d6"}] },
+          { "label": "Stab",  "cost": "1 Action", "range": "1", "notes": "Piercing",
+            "rolls": [{"label":"Attack","kind":"test","stat":"best_str_agi"},{"label":"1d3 Piercing","kind":"dice","formula":"1d3"}] }
+        ]
+      },
+      {
+        "label": "Mace", "tags": ["light"],
+        "actions": [
+          { "label": "Bash", "cost": "1 Action", "range": "1", "notes": "Blunt",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"2d6 Blunt","kind":"dice","formula":"2d6"}] },
+          { "label": "Stun", "cost": "1 Action", "range": "1", "notes": "Blunt; target: FOR Save DV 13 or Dazed",
+            "rolls": [{"label":"Attack","kind":"test","stat":"strength"},{"label":"1d6 Blunt","kind":"dice","formula":"1d6"}] }
+        ]
+      },
+      {
+        "label": "Revolver", "tags": [],
+        "actions": [
+          { "label": "Single-Shot", "cost": "1 Action", "range": "50", "notes": "",
+            "rolls": [{"label":"Attack","kind":"test","stat":"agility"},{"label":"3d6 Damage","kind":"dice","formula":"3d6"}] },
+          { "label": "Reload",      "cost": "1 Action", "range": "-",  "notes": "6 Rounds", "rolls": [] }
+        ]
+      },
+      {
+        "label": "Light Ballistic Shield", "tags": ["light","bulky"],
+        "actions": [
+          { "label": "Shield Wall", "cost": "1 Action", "range": "-", "notes": "Damage from hits dealt to shield (80/80 Durability) until next turn", "rolls": [] }
+        ]
+      },
+      {
+        "label": "Frag Grenade", "tags": [],
+        "actions": [
+          { "label": "Throw Grenade", "cost": "1 Action", "range": "30", "area": "5", "notes": "DV 13 Negates",
+            "rolls": [{"label":"6d6 Damage","kind":"dice","formula":"6d6"}] }
+        ]
+      }
+    ]
+  }
+]

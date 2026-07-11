@@ -10,6 +10,7 @@
 
 let BASE_WEAPON_CONFIG = null;
 let BASE_PERK_CONFIG = null;
+let BASE_ENEMY_CONFIG = null;
 
 // The CDN SDK may be unreachable (offline, blockers). Local drafting works
 // without it; only sign-in/publish need it, and they alert if it's missing.
@@ -18,18 +19,21 @@ const sb = (typeof supabase !== 'undefined')
   : null;
 
 window.addEventListener('DOMContentLoaded', async () => {
-  [BASE_WEAPON_CONFIG, BASE_PERK_CONFIG] = await Promise.all([
+  [BASE_WEAPON_CONFIG, BASE_PERK_CONFIG, BASE_ENEMY_CONFIG] = await Promise.all([
     window.RemoteConfig.loadConfigWithFallback('weapons', 'config/weapons.json'),
-    window.RemoteConfig.loadConfigWithFallback('perks', 'config/perks.json')
+    window.RemoteConfig.loadConfigWithFallback('perks', 'config/perks.json'),
+    window.RemoteConfig.loadConfigWithFallback('enemies', 'config/enemies.json')
   ]);
 
   renderWeaponsList();
   renderAttachmentsList();
   renderPerksList();
+  renderEnemiesList();
 
   document.getElementById('new-weapon-btn').addEventListener('click', () => renderWeaponForm(null));
   document.getElementById('new-attachment-btn').addEventListener('click', () => renderAttachmentForm(null));
   document.getElementById('new-perk-btn').addEventListener('click', () => renderPerkForm(null));
+  document.getElementById('new-enemy-btn').addEventListener('click', () => renderEnemyForm(null));
   document.getElementById('export-btn').addEventListener('click', exportCustomItems);
   document.getElementById('sign-in-btn').addEventListener('click', signIn);
   document.getElementById('publish-btn').addEventListener('click', publishConfigs);
@@ -81,28 +85,31 @@ async function signIn() {
 
 async function publishConfigs() {
   if (!sb) { alert('Supabase SDK failed to load — check your connection and reload.'); return; }
-  if (!confirm('Publish the current weapon, attachment, and perk lists as the official config for all players?')) return;
+  if (!confirm('Publish the current weapons, perks, and enemies as the official config for all players?')) return;
 
-  const stripFlags = list => list.map(({ _custom, _overridden, ...item }) => item);
+  const stripFlags = list => list.map(({ _custom, _overridden, _deleted, ...item }) => item);
   const merged = WeaponStore.getMergedConfig(BASE_WEAPON_CONFIG);
   const weaponsData = { weapons: stripFlags(merged.weapons), attachments: stripFlags(merged.attachments) };
   const perksData = stripFlags(WeaponStore.getPerksMergedConfig(BASE_PERK_CONFIG));
+  const enemiesData = stripFlags(WeaponStore.getEnemiesMergedConfig(BASE_ENEMY_CONFIG));
 
   const now = new Date().toISOString();
   const { error } = await sb.from('configs').upsert([
     { key: 'weapons', data: weaponsData, updated_at: now },
-    { key: 'perks',   data: perksData,   updated_at: now }
+    { key: 'perks',   data: perksData,   updated_at: now },
+    { key: 'enemies', data: enemiesData,  updated_at: now }
   ]);
   if (error) { alert(`Publish failed: ${error.message}`); return; }
 
-  // Drafts are canon now — clear them and rebase the lists on the new canon.
   WeaponStore.clearAllCustom();
   BASE_WEAPON_CONFIG = weaponsData;
   BASE_PERK_CONFIG = perksData;
+  BASE_ENEMY_CONFIG = enemiesData;
   renderWeaponsList();
   renderAttachmentsList();
   renderPerksList();
-  alert('Published. Players get the update next time they load the sheet.');
+  renderEnemiesList();
+  alert('Published. Players and the Encounter Tracker get the update next load.');
 }
 
 function slugify(str) {
@@ -731,5 +738,190 @@ function renderPerkForm(existingPerk) {
 
     container.innerHTML = '';
     renderPerksList();
+  });
+}
+
+// -----------------------------------------------
+// ENEMIES / BAD GUYS
+// -----------------------------------------------
+function renderEnemiesList() {
+  const wrap = document.getElementById('enemies-list');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const enemies = WeaponStore.getEnemiesMergedConfig(BASE_ENEMY_CONFIG, { includeDeleted: true });
+  if (enemies.length === 0) {
+    wrap.innerHTML = '<p style="color:var(--text-muted)">(none yet)</p>';
+    return;
+  }
+  enemies.forEach(enemy => {
+    wrap.appendChild(buildAdminRow(enemy, {
+      name: enemy.name,
+      kindLabel: 'enemy',
+      kind: 'enemies',
+      meta: `${escHtml(enemy.subtitle || '')} · ${(enemy.action_groups || []).length} gear group(s)`,
+      deleteDraft: WeaponStore.deleteCustomEnemy,
+      onEdit: () => renderEnemyForm(enemy),
+      rerender: renderEnemiesList,
+      deleteWarning: 'The template will be removed from the Encounter Tracker on next Publish.'
+    }));
+  });
+}
+
+function buildEnemySkillRowForm(skill = {}) {
+  const row = document.createElement('div');
+  row.className = 'admin-action-row-fields';
+  row.innerHTML = `
+    <input class="field-input" placeholder="Skill name" data-s="label" value="${escHtml(skill.label || '')}" style="flex:3">
+    <input class="field-input" placeholder="Ranks" type="number" data-s="ranks" value="${skill.ranks ?? 0}" style="flex:1">
+    <input class="field-input" placeholder="Bonus" type="number" data-s="bonus" value="${skill.bonus ?? 0}" style="flex:1">
+    <button class="delete-item-btn" data-remove title="Remove skill">✕</button>
+  `;
+  row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
+  row.readSkill = function () {
+    const label = row.querySelector('[data-s="label"]').value.trim();
+    const ranks = parseInt(row.querySelector('[data-s="ranks"]').value) || 0;
+    const bonus = parseInt(row.querySelector('[data-s="bonus"]').value) || 0;
+    return { label, ranks, bonus, total: ranks + bonus };
+  };
+  return row;
+}
+
+const _ACTION_GROUPS_EXAMPLE = JSON.stringify([
+  {
+    "label": "Axe", "tags": ["versatile"],
+    "actions": [
+      { "label": "Slash", "cost": "1 Action", "range": "1", "notes": "",
+        "rolls": [
+          { "label": "Attack", "kind": "test", "stat": "strength" },
+          { "label": "3d6 Damage", "kind": "dice", "formula": "3d6" }
+        ]
+      }
+    ]
+  }
+], null, 2);
+
+function renderEnemyForm(existingEnemy) {
+  const container = document.getElementById('enemy-form-container');
+  container.innerHTML = '';
+  const cs = existingEnemy?.core_stats || {};
+  const actionGroupsJson = existingEnemy?.action_groups
+    ? JSON.stringify(existingEnemy.action_groups, null, 2)
+    : _ACTION_GROUPS_EXAMPLE;
+  const gearNotesText = (existingEnemy?.gear_notes || []).join('\n');
+
+  const form = document.createElement('div');
+  form.className = 'admin-form';
+  form.innerHTML = `
+    <div class="char-info-grid">
+      <div class="field-group">
+        <label class="field-label">Name</label>
+        <input class="field-input" id="en-name" value="${escHtml(existingEnemy?.name || '')}">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Subtitle (e.g. Level 1 Raider)</label>
+        <input class="field-input" id="en-subtitle" value="${escHtml(existingEnemy?.subtitle || '')}">
+      </div>
+    </div>
+    <div class="section-header mt-md">Core Stats</div>
+    <div class="char-info-grid">
+      <div class="field-group"><label class="field-label">STR</label>
+        <input class="field-input" id="en-str" type="number" value="${cs.strength ?? 0}"></div>
+      <div class="field-group"><label class="field-label">AGI</label>
+        <input class="field-input" id="en-agi" type="number" value="${cs.agility ?? 0}"></div>
+      <div class="field-group"><label class="field-label">FOR</label>
+        <input class="field-input" id="en-for" type="number" value="${cs.fortitude ?? 0}"></div>
+      <div class="field-group"><label class="field-label">WIL</label>
+        <input class="field-input" id="en-wil" type="number" value="${cs.willpower ?? 0}"></div>
+      <div class="field-group"><label class="field-label">SIZE</label>
+        <input class="field-input" id="en-size" type="number" value="${cs.size ?? 1}"></div>
+    </div>
+    <div class="section-header mt-md">Derived Stats</div>
+    <div class="char-info-grid">
+      <div class="field-group"><label class="field-label">HP Max</label>
+        <input class="field-input" id="en-hp" type="number" value="${existingEnemy?.hp_max ?? 25}"></div>
+      <div class="field-group"><label class="field-label">Injury Threshold</label>
+        <input class="field-input" id="en-inj" type="number" value="${existingEnemy?.injury_threshold ?? 10}"></div>
+      <div class="field-group"><label class="field-label">Helm Max (0 = none)</label>
+        <input class="field-input" id="en-helm" type="number" value="${existingEnemy?.helm_max ?? 0}"></div>
+      <div class="field-group"><label class="field-label">Armor Max (0 = none)</label>
+        <input class="field-input" id="en-armor" type="number" value="${existingEnemy?.armor_max ?? 0}"></div>
+      <div class="field-group"><label class="field-label">Speed</label>
+        <input class="field-input" id="en-spd" type="number" value="${existingEnemy?.speed ?? 8}"></div>
+      <div class="field-group"><label class="field-label">Initiative</label>
+        <input class="field-input" id="en-init" type="number" value="${existingEnemy?.initiative ?? 0}"></div>
+      <div class="field-group"><label class="field-label">Morale</label>
+        <input class="field-input" id="en-morale" type="number" value="${existingEnemy?.morale ?? 0}"></div>
+      <div class="field-group"><label class="field-label">Recovery</label>
+        <input class="field-input" id="en-recovery" type="number" value="${existingEnemy?.recovery_val ?? 10}"></div>
+    </div>
+    <div class="section-header mt-md">Skills</div>
+    <div id="en-skills-list"></div>
+    <button class="btn btn-secondary mt-sm" id="en-add-skill-btn">＋ Add Skill</button>
+    <div class="section-header mt-md">Gear Notes (one per line)</div>
+    <textarea class="field-input" id="en-gear-notes" rows="4">${escHtml(gearNotesText)}</textarea>
+    <div class="section-header mt-md">Action Groups (JSON)</div>
+    <p class="campaign-note">Each group is a gear item with actions. Roll "stat" values: strength, agility, fortitude, willpower, best_str_agi</p>
+    <textarea class="field-input" id="en-action-groups" rows="20" style="font-family:monospace;font-size:0.8rem">${escHtml(actionGroupsJson)}</textarea>
+    <div class="flex gap-sm mt-md">
+      <button class="btn btn-primary" id="en-save-btn">Save Enemy</button>
+      <button class="btn btn-secondary" id="en-cancel-btn">Cancel</button>
+    </div>
+  `;
+  container.appendChild(form);
+
+  const skillsList = document.getElementById('en-skills-list');
+  (existingEnemy?.skills || []).forEach(sk => skillsList.appendChild(buildEnemySkillRowForm(sk)));
+  document.getElementById('en-add-skill-btn').addEventListener('click', () => {
+    skillsList.appendChild(buildEnemySkillRowForm());
+  });
+  document.getElementById('en-cancel-btn').addEventListener('click', () => { container.innerHTML = ''; });
+
+  document.getElementById('en-save-btn').addEventListener('click', () => {
+    const name = document.getElementById('en-name').value.trim();
+    if (!name) { alert('Name is required.'); return; }
+
+    const rawJson = document.getElementById('en-action-groups').value.trim();
+    let action_groups = [];
+    if (rawJson) {
+      try {
+        action_groups = JSON.parse(rawJson);
+        if (!Array.isArray(action_groups)) { alert('Action Groups must be a JSON array [ ... ].'); return; }
+      } catch (err) {
+        alert(`Action Groups JSON is invalid: ${err.message}`);
+        return;
+      }
+    }
+
+    const officialIds = Array.isArray(BASE_ENEMY_CONFIG) ? BASE_ENEMY_CONFIG.map(e => e.id) : [];
+    const customIds = WeaponStore.getCustomEnemies().map(e => e.id).filter(id => id !== existingEnemy?.id);
+    const id = existingEnemy?.id || uniqueId(slugify(name), [...officialIds, ...customIds]);
+
+    const skills = Array.from(skillsList.children).map(row => row.readSkill()).filter(sk => sk.label);
+    const gear_notes = document.getElementById('en-gear-notes').value
+      .split('\n').map(s => s.trim()).filter(Boolean);
+
+    WeaponStore.saveCustomEnemy({
+      id, name,
+      subtitle:         document.getElementById('en-subtitle').value.trim(),
+      core_stats: {
+        strength:  parseInt(document.getElementById('en-str').value)  || 0,
+        agility:   parseInt(document.getElementById('en-agi').value)  || 0,
+        fortitude: parseInt(document.getElementById('en-for').value)  || 0,
+        willpower: parseInt(document.getElementById('en-wil').value)  || 0,
+        size:      parseInt(document.getElementById('en-size').value) || 1
+      },
+      hp_max:           parseInt(document.getElementById('en-hp').value)       || 25,
+      injury_threshold: parseInt(document.getElementById('en-inj').value)      || 10,
+      helm_max:         parseInt(document.getElementById('en-helm').value)     || 0,
+      armor_max:        parseInt(document.getElementById('en-armor').value)    || 0,
+      speed:            parseInt(document.getElementById('en-spd').value)      || 0,
+      initiative:       parseInt(document.getElementById('en-init').value)     || 0,
+      morale:           parseInt(document.getElementById('en-morale').value)   || 0,
+      recovery_val:     parseInt(document.getElementById('en-recovery').value) || 0,
+      skills, gear_notes, action_groups
+    });
+
+    container.innerHTML = '';
+    renderEnemiesList();
   });
 }
