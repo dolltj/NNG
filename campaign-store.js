@@ -28,7 +28,27 @@
   async function signIn(email, password) {
     const { data, error } = await _need().auth.signInWithPassword({ email, password });
     if (error) throw error;
+    // Register email in profiles so GMs can look up players by email
+    await _need().from('profiles').upsert({
+      user_id: data.session.user.id,
+      email: data.session.user.email,
+      updated_at: new Date().toISOString()
+    });
     return data.session;
+  }
+
+  async function findUserByEmail(email) {
+    const { data, error } = await _need().from('profiles').select('user_id').eq('email', email).maybeSingle();
+    if (error) throw error;
+    return data ? data.user_id : null;
+  }
+
+  async function reassignCharacter(charId, newOwnerId) {
+    const { error } = await _need().from('characters').update({
+      owner_id: newOwnerId,
+      updated_at: new Date().toISOString()
+    }).eq('id', charId);
+    if (error) throw error;
   }
 
   async function signOut() {
@@ -90,6 +110,7 @@
     available: !!sb,
     getSession, signIn, signOut,
     listCampaigns, createCampaign, deleteCampaign,
-    listCharacters, fetchCharacter, upsertCharacter, deleteCharacter
+    listCharacters, fetchCharacter, upsertCharacter, deleteCharacter,
+    findUserByEmail, reassignCharacter
   };
 })();
