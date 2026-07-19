@@ -244,13 +244,65 @@ function _buildDetail(inst) {
     </div>
     <div class="enc-dmg-row">
       <input type="number" id="enc-amt" class="field-input enc-amt-input" placeholder="Amount" min="0">
+      <div class="enc-dmg-type-row" id="enc-dmg-type-row">
+        <button class="enc-dmg-type active" data-dmg-type="standard"  title="Absorbed by armor first; overflow to HP">Standard</button>
+        <button class="enc-dmg-type"        data-dmg-type="piercing"  title="½ directly to HP, ½ to armor">Piercing</button>
+        <button class="enc-dmg-type"        data-dmg-type="blunt"     title="2× to armor, no HP overflow">Blunt</button>
+        <button class="enc-dmg-type"        data-dmg-type="energy"    title="Bypasses armor — directly to HP">Energy</button>
+      </div>
       <button class="btn btn-danger"    id="enc-dmg-btn">− Damage</button>
       <button class="btn btn-secondary" id="enc-heal-btn">＋ Heal</button>
     </div>`;
   f.appendChild(hdr);
+
+  // Damage type toggle
+  hdr.querySelectorAll('[data-dmg-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      hdr.querySelectorAll('[data-dmg-type]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  function _activeDmgType() {
+    return (hdr.querySelector('[data-dmg-type].active') || {}).dataset?.dmgType || 'standard';
+  }
+
+  // Apply damage through armor per rulebook damage-type rules
+  function _applyDamage(inst, amt, type) {
+    if (amt <= 0) return;
+    if (type === 'energy') {
+      // Bypasses armor entirely — straight to HP
+      inst.hp = Math.max(0, inst.hp - amt);
+      return;
+    }
+    if (type === 'blunt') {
+      // 2× effective vs. armor; no overflow to HP
+      let remaining = amt * 2;
+      if (inst.armor > 0) { const ab = Math.min(inst.armor, remaining); inst.armor -= ab; remaining -= ab; }
+      if (remaining > 0 && inst.helm > 0) { const ab = Math.min(inst.helm, remaining); inst.helm -= ab; }
+      // No overflow to HP for blunt
+      return;
+    }
+    if (type === 'piercing') {
+      // Half directly to HP (round up), half to armor
+      const toHP    = Math.ceil(amt / 2);
+      const toArmor = Math.floor(amt / 2);
+      inst.hp = Math.max(0, inst.hp - toHP);
+      let rem = toArmor;
+      if (rem > 0 && inst.armor > 0) { const ab = Math.min(inst.armor, rem); inst.armor -= ab; rem -= ab; }
+      if (rem > 0 && inst.helm  > 0) { inst.helm = Math.max(0, inst.helm - rem); }
+      return;
+    }
+    // Standard: absorbed by armor first, overflow to HP
+    let remaining = amt;
+    if (remaining > 0 && inst.armor > 0) { const ab = Math.min(inst.armor, remaining); inst.armor -= ab; remaining -= ab; }
+    if (remaining > 0 && inst.helm  > 0) { const ab = Math.min(inst.helm,  remaining); inst.helm  -= ab; remaining -= ab; }
+    if (remaining > 0) inst.hp = Math.max(0, inst.hp - remaining);
+  }
+
   hdr.querySelector('#enc-dmg-btn').addEventListener('click', () => {
-    const amt = Math.max(0, parseInt(document.getElementById('enc-amt').value) || 0);
-    inst.hp = Math.max(0, inst.hp - amt);
+    const amt  = Math.max(0, parseInt(document.getElementById('enc-amt').value) || 0);
+    const type = _activeDmgType();
+    _applyDamage(inst, amt, type);
     _syncCard(inst);
     renderDetail();
   });

@@ -1239,7 +1239,7 @@ function buildWeaponCard(weaponInst, resolved) {
     <div class="weapon-card-header">
       <div class="weapon-card-title">
         <span class="weapon-card-label">${escHtml(resolved.label)}</span>
-        <span class="weapon-card-tags">${escHtml((resolved.tags || []).join(', '))}</span>
+        <span class="weapon-card-tags">${escHtml((resolved.tags || []).join(', '))}${(resolved.tags || []).includes('heavy') && (getChar().core_stats?.strength ?? 0) < 3 ? ' ⚠ Heavy' : ''}</span>
       </div>
       <div class="weapon-card-header-controls">
         ${ammoHtml}
@@ -1365,12 +1365,16 @@ function buildActionRow(weaponInst, resolved, action) {
   if (action.save_dv != null) notesParts.push(`DV ${action.save_dv} negates`);
   const notesText = notesParts.length ? ` (${notesParts.join(', ')})` : '';
 
+  // Heavy keyword: Disadvantage on attack rolls if STR < 3 (NNGRules)
+  const isHeavy = (resolved.tags || []).includes('heavy');
+  const heavyPenaltyActive = isHeavy && (getChar().core_stats?.strength ?? 0) < 3;
+
   const hasAmmo = weaponInst.ammo != null;
   const insufficientAmmo = hasAmmo && action.ammo_cost && weaponInst.ammo.current < action.ammo_cost;
 
   row.innerHTML = `
     <span class="weapon-action-label">${escHtml(action.label)}</span>
-    <span class="weapon-action-meta">Rng ${escHtml(String(action.range))}${escHtml(notesText)}</span>
+    <span class="weapon-action-meta">Rng ${escHtml(String(action.range))}${escHtml(notesText)}${heavyPenaltyActive ? ' ⚠ Heavy (Disadvantage — STR < 3)' : ''}</span>
     <button class="attack-roll-btn"${insufficientAmmo ? ' disabled' : ''}>🎲 Attack</button>
     <button class="damage-roll-btn">⚔ ${escHtml(action.damage)}</button>
   `;
@@ -1387,18 +1391,22 @@ function buildActionRow(weaponInst, resolved, action) {
     const isBurstFire = !!action.burst_fire;
     const burstDisadvantageApplies = isBurstFire && !resolved.burst_disadvantage_removed;
     const attackCount = isBurstFire ? (action.attack_count || 1) : 1;
+    // Heavy: Disadvantage if STR < 3 (checked at click time in case stats changed)
+    const heavyDis = (resolved.tags || []).includes('heavy') && (getChar().core_stats?.strength ?? 0) < 3 ? 1 : 0;
+    const totalPresetDis = (burstDisadvantageApplies ? 1 : 0) + heavyDis;
 
     if (e.shiftKey) {
       openAdvantageModal({
         label, baseDieCount: 2, modifier, characterName,
-        attackCount, presetDisadvantage: burstDisadvantageApplies ? 1 : 0
+        attackCount, presetDisadvantage: totalPresetDis
       });
-    } else if (isBurstFire) {
-      const formula = burstDisadvantageApplies
-        ? buildAdvantageFormula(2, modifier, 0, 1)
+    } else if (isBurstFire || totalPresetDis > 0) {
+      const formula = totalPresetDis > 0
+        ? buildAdvantageFormula(2, modifier, 0, totalPresetDis)
         : buildTestFormula(modifier);
       for (let i = 1; i <= attackCount; i++) {
-        window.Roll20Bridge.sendToRoll20({ label: `${label} (${i}/${attackCount})`, formula, characterName });
+        const lbl = attackCount > 1 ? `${label} (${i}/${attackCount})` : label;
+        window.Roll20Bridge.sendToRoll20({ label: lbl, formula, characterName });
       }
     } else {
       const formula = buildTestFormula(modifier);

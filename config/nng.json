@@ -65,7 +65,7 @@
     { "type": "Grapple", "label": "Contest Control", "text": "1 Action. Make a Grapple Test against the other participant; the winner becomes the controller.",
       "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }] },
     { "type": "Grapple", "label": "Choke", "text": "1 Action, Range 1. Win a Grapple Test: 2d6 damage directly to the target's Hit Points; the target then makes a Fortitude Save (DV 13) or gains the Silenced condition.",
-      "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }, { "label": "2d6 Choke", "kind": "dice", "formula": "2d6" }] },
+      "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }, { "label": "2d6 Choke", "kind": "dice", "formula": "2d6" }, { "label": "Target FOR Save (DV 13)", "kind": "dice", "formula": "2d10" }] },
     { "type": "Grapple", "label": "Drag", "text": "1 Action, Range 1. Win a Grapple Test: move up to 4 spaces, dragging the target with you. Ignores the Grappled Speed reduction.",
       "rolls": [{ "label": "Grapple Test", "kind": "test", "stat": "best_str_agi" }] },
     { "type": "Grapple", "label": "Human Shield", "text": "1 Action, Range 1. Win a Grapple Test: use the target as a shield against incoming damage until the start of your next turn or until you lose control. The target takes damage as a shield used by the controller. A dead target is considered an object.",

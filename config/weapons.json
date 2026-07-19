@@ -4,7 +4,7 @@
       "id": "monodagger",
       "label": "Monodagger",
       "category": "Modern Melee Weapon",
-      "tags": ["light", "finesse", "concealable"],
+      "tags": ["light", "finesse", "concealable", "thrown"],
       "description": "A crystal-metallic dagger infused with mechanites that maintain a mono-molecular cutting edge.",
       "magazine_size": null,
       "actions": [
@@ -17,7 +17,7 @@
       "id": "machine_pistol",
       "label": "Machine Pistol",
       "category": "Modern Ranged Weapon",
-      "tags": ["light", "concealable"],
+      "tags": ["light", "concealable", "ammunition"],
       "description": "A fully automatic handgun designed primarily for close-quarters combat.",
       "magazine_size": 20,
       "actions": [
@@ -31,7 +31,7 @@
       "id": "submachine_gun",
       "label": "Submachine Gun",
       "category": "Modern Ranged Weapon",
-      "tags": [],
+      "tags": ["two-handed", "heavy", "ammunition"],
       "description": "A compact, lightweight, fully automatic weapon designed to be fired from the shoulder or hip.",
       "magazine_size": 30,
       "actions": [

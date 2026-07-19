@@ -1911,6 +1911,29 @@ textarea.field-input {
     action groups, stat roll buttons)
    ============================================= */
 
+/* Damage type selector (encounter tracker) */
+.enc-dmg-type-row {
+  display: flex;
+  gap: 2px;
+}
+.enc-dmg-type {
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.enc-dmg-type:hover { border-color: var(--gold); color: var(--text-primary); }
+.enc-dmg-type.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+  font-weight: 600;
+}
+
 /* HP edit row inside card */
 .enc-hp-edit {
   display: flex;
