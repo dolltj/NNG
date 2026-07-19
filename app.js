@@ -1440,6 +1440,7 @@ function buildActionRow(weaponInst, resolved, action) {
   const notesParts = [`+${abilityAtRender.value} ${abilityAtRender.stat}`];
   if (action.area_of_effect != null) notesParts.push(`AoE ${action.area_of_effect}`);
   if (action.save_dv != null) notesParts.push(`DV ${action.save_dv} negates`);
+  if (action.notes) notesParts.push(action.notes);
   const notesText = notesParts.length ? ` (${notesParts.join(', ')})` : '';
 
   // Heavy keyword: Disadvantage on attack rolls if STR < 3 (NNGRules)
@@ -1448,13 +1449,37 @@ function buildActionRow(weaponInst, resolved, action) {
 
   const hasAmmo = weaponInst.ammo != null;
   const insufficientAmmo = hasAmmo && action.ammo_cost && weaponInst.ammo.current < action.ammo_cost;
+  const isReaction = !!action.is_reaction;
+  const costLabel = isReaction ? 'Reaction' : action.action_cost === 2 ? '2 Actions' : '1 Action';
+  const isUtility = action.damage == null; // no attack/damage rolls — just mark action used
 
   row.innerHTML = `
     <span class="weapon-action-label">${escHtml(action.label)}</span>
-    <span class="weapon-action-meta">Rng ${escHtml(String(action.range))}${escHtml(notesText)}${heavyPenaltyActive ? ' ⚠ Heavy (Disadvantage — STR < 3)' : ''}</span>
-    <button class="attack-roll-btn"${insufficientAmmo ? ' disabled' : ''}>🎲 Attack</button>
-    <button class="damage-roll-btn">⚔ ${escHtml(action.damage)}</button>
+    <span class="weapon-action-cost-badge">${escHtml(costLabel)}</span>
+    <span class="weapon-action-meta">Rng ${escHtml(String(action.range ?? '—'))}${escHtml(notesText)}${heavyPenaltyActive ? ' ⚠ Heavy (Disadvantage — STR < 3)' : ''}</span>
+    ${isUtility
+      ? `<button class="btn btn-secondary weapon-use-btn"${insufficientAmmo ? ' disabled' : ''}>Use</button>`
+      : `<button class="attack-roll-btn"${insufficientAmmo ? ' disabled' : ''}>🎲 Attack</button>
+         <button class="damage-roll-btn">⚔ ${escHtml(action.damage)}</button>`}
   `;
+
+  const spendAmmo = () => {
+    if (hasAmmo && action.ammo_cost) {
+      weaponInst.ammo.current = Math.max(0, weaponInst.ammo.current - action.ammo_cost);
+      scheduleSave();
+      refreshWeaponViews();
+    }
+  };
+
+  if (isUtility) {
+    row.querySelector('.weapon-use-btn').addEventListener('click', () => {
+      if (insufficientAmmo) return;
+      markActionUsed(isReaction ? 'reaction' : 'actions');
+      window.Roll20Bridge.sendAnnouncement(`${rollCharacterName(getChar())} uses ${resolved.label} — ${action.label}`);
+      spendAmmo();
+    });
+    return row;
+  }
 
   row.querySelector('.attack-roll-btn').addEventListener('click', e => {
     if (insufficientAmmo) return;
@@ -1463,7 +1488,7 @@ function buildActionRow(weaponInst, resolved, action) {
     const ability = weaponAttackAbility(getChar(), resolved);
     const modifier = ability.value + (weaponInst.bonus ?? 0) + (action.hit_bonus || 0);
     const label = `${resolved.label} — ${action.label}`;
-    markActionUsed('actions'); // attacking is an Action
+    markActionUsed(isReaction ? 'reaction' : 'actions');
     const characterName = rollCharacterName(getChar());
     const isBurstFire = !!action.burst_fire;
     const burstDisadvantageApplies = isBurstFire && !resolved.burst_disadvantage_removed;
@@ -1490,11 +1515,7 @@ function buildActionRow(weaponInst, resolved, action) {
       window.Roll20Bridge.sendToRoll20({ label, formula, characterName });
     }
 
-    if (hasAmmo && action.ammo_cost) {
-      weaponInst.ammo.current = Math.max(0, weaponInst.ammo.current - action.ammo_cost);
-      scheduleSave();
-      refreshWeaponViews(); // ammo shows on both Combat and Actions tabs
-    }
+    spendAmmo();
   });
 
   row.querySelector('.damage-roll-btn').addEventListener('click', () => {

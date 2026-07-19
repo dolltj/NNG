@@ -1,6 +1,123 @@
 {
   "weapons": [
     {
+      "id": "autopistol",
+      "label": "Autopistol",
+      "category": "Modern Ranged Weapon",
+      "tags": ["light", "concealable", "ammunition"],
+      "description": "A blowback-operated self-loading pistol. Quick to draw and fire.",
+      "magazine_size": 10,
+      "actions": [
+        { "id": "single_shot", "label": "Single-Shot", "range": 30, "damage": "3d6", "ammo_cost": 1 },
+        { "id": "reload", "label": "Reload", "is_reload": true }
+      ]
+    },
+    {
+      "id": "revolver",
+      "label": "Revolver",
+      "category": "Modern Ranged Weapon",
+      "tags": ["light", "concealable", "ammunition"],
+      "description": "A double-action revolver. It's reliable, has decent range for a pistol, and is quick on the draw.",
+      "magazine_size": 6,
+      "actions": [
+        { "id": "single_shot", "label": "Single-Shot", "range": 50, "damage": "3d6", "ammo_cost": 1 },
+        { "id": "reload", "label": "Reload", "is_reload": true }
+      ]
+    },
+    {
+      "id": "machine_pistol",
+      "label": "Machine Pistol",
+      "category": "Modern Ranged Weapon",
+      "tags": ["light", "concealable", "ammunition"],
+      "description": "A fully automatic handgun designed primarily for close-quarters combat.",
+      "magazine_size": 20,
+      "actions": [
+        { "id": "single_shot", "label": "Single-Shot", "range": 30, "damage": "2d6", "ammo_cost": 1 },
+        { "id": "three_round_burst", "label": "Three-Round Burst", "range": 30, "damage": "2d6", "ammo_cost": 3, "burst_fire": true, "attack_count": 3, "action_cost": 2 },
+        { "id": "full_auto", "label": "Full-Auto", "range": 30, "damage": "2d6", "ammo_cost": 10, "area_of_effect": 3, "save_dv": 11, "action_cost": 2 },
+        { "id": "reload", "label": "Reload", "is_reload": true }
+      ]
+    },
+    {
+      "id": "submachine_gun",
+      "label": "Submachine Gun",
+      "category": "Modern Ranged Weapon",
+      "tags": ["two-handed", "heavy", "ammunition"],
+      "description": "A compact, lightweight, fully automatic weapon designed to be fired from the shoulder or hip.",
+      "magazine_size": 30,
+      "actions": [
+        { "id": "single_shot", "label": "Single-Shot", "range": 50, "damage": "3d6", "ammo_cost": 1 },
+        { "id": "three_round_burst", "label": "Three-Round Burst", "range": 50, "damage": "3d6", "ammo_cost": 3, "burst_fire": true, "attack_count": 3, "action_cost": 2 },
+        { "id": "full_auto", "label": "Full-Auto", "range": 50, "damage": "3d6", "ammo_cost": 10, "area_of_effect": 3, "save_dv": 13, "action_cost": 2 },
+        { "id": "reload", "label": "Reload", "is_reload": true }
+      ]
+    },
+    {
+      "id": "assault_rifle",
+      "label": "Assault Rifle",
+      "category": "Modern Ranged Weapon",
+      "tags": ["bulky", "two-handed", "ammunition"],
+      "description": "A general purpose weapon for field or urban combat. It has good range, power, and accuracy.",
+      "magazine_size": 30,
+      "actions": [
+        { "id": "single_shot", "label": "Single-Shot", "range": 300, "damage": "5d6", "ammo_cost": 1 },
+        { "id": "three_round_burst", "label": "Three-Round Burst", "range": 300, "damage": "5d6", "ammo_cost": 3, "burst_fire": true, "attack_count": 3, "action_cost": 2 },
+        { "id": "reload", "label": "Reload", "is_reload": true }
+      ]
+    },
+    {
+      "id": "shotgun",
+      "label": "Shotgun",
+      "category": "Modern Ranged Weapon",
+      "tags": ["bulky", "two-handed", "ammunition"],
+      "description": "A simple pump action shotgun that can fire either single slug ammunition or a tightly-packed spray of pellets.",
+      "magazine_size": 5,
+      "actions": [
+        { "id": "slug", "label": "Slug", "range": 100, "damage": "5d6", "ammo_cost": 1 },
+        { "id": "shot", "label": "Shot", "range": 30, "damage": "3d6", "ammo_cost": 1, "area_of_effect": 1, "save_dv": 11, "notes": "Line attack" },
+        { "id": "reload", "label": "Reload", "is_reload": true, "action_cost": 2 }
+      ]
+    },
+    {
+      "id": "light_machine_gun",
+      "label": "Light Machine Gun",
+      "category": "Modern Ranged Weapon",
+      "tags": ["bulky", "heavy", "two-handed", "ammunition"],
+      "description": "A portable, heavy automatic weapon designed to provide continuous suppressive fire.",
+      "magazine_size": 100,
+      "actions": [
+        { "id": "three_round_burst", "label": "Three-Round Burst", "range": 600, "damage": "5d6", "ammo_cost": 3, "burst_fire": true, "attack_count": 3, "action_cost": 2 },
+        { "id": "full_auto", "label": "Full-Auto", "range": 600, "damage": "5d6", "ammo_cost": 10, "area_of_effect": 5, "save_dv": 15, "action_cost": 2 },
+        { "id": "suppressing_fire", "label": "Suppressing Fire", "range": 600, "damage": null, "ammo_cost": 10, "area_of_effect": 5, "save_dv": 15, "action_cost": 2, "notes": "No damage — targets in Area 5 must pass a Defense Roll (DV 15) or be forced into cover." },
+        { "id": "reload", "label": "Reload", "is_reload": true, "action_cost": 2 }
+      ]
+    },
+    {
+      "id": "sniper_rifle",
+      "label": "Sniper Rifle",
+      "category": "Modern Ranged Weapon",
+      "tags": ["bulky", "two-handed", "ammunition"],
+      "description": "A long-range precision rifle.",
+      "magazine_size": 5,
+      "actions": [
+        { "id": "single_shot", "label": "Single-Shot", "range": 800, "damage": "6d6", "ammo_cost": 1 },
+        { "id": "reload", "label": "Reload", "is_reload": true }
+      ]
+    },
+    {
+      "id": "breach_axe",
+      "label": "Breach Axe",
+      "category": "Modern Melee Weapon",
+      "tags": ["versatile"],
+      "description": "A combined blade and tool head attached to a sturdy haft. It excels at tearing through armor and shields.",
+      "magazine_size": null,
+      "actions": [
+        { "id": "chop", "label": "Chop", "range": 1, "damage": "4d6", "notes": "+5 damage on Head Shots" },
+        { "id": "shred", "label": "Shred", "range": 1, "damage": "3d6", "armor_multiplier": 2, "notes": "×2 vs. Armor — armor is consumed at double rate" },
+        { "id": "split", "label": "Split", "range": 1, "damage": "3d6", "shield_multiplier": 2, "notes": "×2 vs. Shields" }
+      ]
+    },
+    {
       "id": "monodagger",
       "label": "Monodagger",
       "category": "Modern Melee Weapon",
@@ -14,32 +131,218 @@
       ]
     },
     {
-      "id": "machine_pistol",
-      "label": "Machine Pistol",
-      "category": "Modern Ranged Weapon",
-      "tags": ["light", "concealable", "ammunition"],
-      "description": "A fully automatic handgun designed primarily for close-quarters combat.",
-      "magazine_size": 20,
+      "id": "monosword",
+      "label": "Monosword",
+      "category": "Modern Melee Weapon",
+      "tags": ["versatile"],
+      "description": "A crystal-metallic sword infused with mechanites that maintain a mono-molecular cutting edge.",
+      "magazine_size": null,
       "actions": [
-        { "id": "single_shot", "label": "Single-Shot", "range": 30, "damage": "2d6", "ammo_cost": 1 },
-        { "id": "three_round_burst", "label": "Three-Round Burst", "range": 30, "damage": "2d6", "ammo_cost": 3, "burst_fire": true, "attack_count": 3 },
-        { "id": "full_auto", "label": "Full-Auto", "range": 30, "damage": "2d6", "ammo_cost": 10, "area_of_effect": 3, "save_dv": 11 },
-        { "id": "reload", "label": "Reload", "is_reload": true }
+        { "id": "slash", "label": "Slash", "range": 1, "damage": "5d6" },
+        { "id": "thrust", "label": "Thrust", "range": 1, "damage": "4d6", "damage_type": "piercing" },
+        { "id": "riposte", "label": "Riposte", "range": 1, "damage": "4d6", "is_reaction": true, "notes": "Requires a successful Parry" }
       ]
     },
     {
-      "id": "submachine_gun",
-      "label": "Submachine Gun",
-      "category": "Modern Ranged Weapon",
-      "tags": ["two-handed", "heavy", "ammunition"],
-      "description": "A compact, lightweight, fully automatic weapon designed to be fired from the shoulder or hip.",
-      "magazine_size": 30,
+      "id": "monowire",
+      "label": "Monowire",
+      "category": "Modern Melee Weapon",
+      "tags": ["concealable", "finesse", "light", "two-handed"],
+      "description": "A thin piece of wire held between two molded grips infused with mechanites to maintain a mono-molecular sharpness.",
+      "magazine_size": null,
       "actions": [
-        { "id": "single_shot", "label": "Single-Shot", "range": 50, "damage": "3d6", "ammo_cost": 1 },
-        { "id": "three_round_burst", "label": "Three-Round Burst", "range": 50, "damage": "3d6", "ammo_cost": 3, "burst_fire": true, "attack_count": 3 },
-        { "id": "full_auto", "label": "Full-Auto", "range": 50, "damage": "3d6", "ammo_cost": 10, "area_of_effect": 3, "save_dv": 13 },
-        { "id": "reload", "label": "Reload", "is_reload": true }
+        { "id": "garrote", "label": "Garrote", "range": 1, "damage": "2d6", "damage_type": "energy", "notes": "Must target an unaware or Restrained character. Damage goes directly to HP; target makes FOR Save (DV 13) or gains Silenced." }
       ]
+    },
+    {
+      "id": "axe",
+      "label": "Axe",
+      "category": "Primitive Melee Weapon",
+      "tags": ["versatile"],
+      "description": "An advanced form of one of mankind's oldest weapons. The simple design concentrates cutting power from strong overhead swings.",
+      "magazine_size": null,
+      "actions": [
+        { "id": "slash", "label": "Slash", "range": 1, "damage": "3d6" },
+        { "id": "chop", "label": "Chop", "range": 1, "damage": "2d6", "notes": "+5 damage on Head Shots" },
+        { "id": "split", "label": "Split", "range": 1, "damage": "2d6", "shield_multiplier": 2, "notes": "×2 vs. Shields" }
+      ]
+    },
+    {
+      "id": "club",
+      "label": "Club",
+      "category": "Primitive Melee Weapon",
+      "tags": ["concealable", "light"],
+      "description": "A shaped stick, heavy at one end, for bashing enemies to death.",
+      "magazine_size": null,
+      "actions": [
+        { "id": "bash", "label": "Bash", "range": 1, "damage": "1d6", "damage_type": "blunt" },
+        { "id": "stun", "label": "Stun", "range": 1, "damage": "1d3", "damage_type": "blunt", "notes": "Target makes FOR Save (DV 11) or gains Dazed." }
+      ]
+    },
+    {
+      "id": "knife",
+      "label": "Knife",
+      "category": "Primitive Melee Weapon",
+      "tags": ["concealable", "finesse", "light"],
+      "description": "One of mankind's oldest manufactured weapons. A handle for holding and a sharp edge for cutting or stabbing.",
+      "magazine_size": null,
+      "actions": [
+        { "id": "slash", "label": "Slash", "range": 1, "damage": "1d6" },
+        { "id": "stab", "label": "Stab", "range": 1, "damage": "1d3", "damage_type": "piercing" }
+      ]
+    },
+    {
+      "id": "longsword",
+      "label": "Longsword",
+      "category": "Primitive Melee Weapon",
+      "tags": ["versatile"],
+      "description": "An ancient weapon of knights. Can be used for slashing, stabbing, or held by the blade for powerful pommel strikes.",
+      "magazine_size": null,
+      "actions": [
+        { "id": "slash", "label": "Slash", "range": 1, "damage": "3d6" },
+        { "id": "thrust", "label": "Thrust", "range": 1, "damage": "2d6", "damage_type": "piercing" },
+        { "id": "mordhau", "label": "Mordhau", "range": 1, "damage": "2d6", "damage_type": "blunt", "notes": "Requires two hands." }
+      ]
+    },
+    {
+      "id": "mace",
+      "label": "Mace",
+      "category": "Primitive Melee Weapon",
+      "tags": ["light"],
+      "description": "A refined club, engineered for efficient swinging and deadly impacts.",
+      "magazine_size": null,
+      "actions": [
+        { "id": "bash", "label": "Bash", "range": 1, "damage": "2d6", "damage_type": "blunt" },
+        { "id": "stun", "label": "Stun", "range": 1, "damage": "1d6", "damage_type": "blunt", "notes": "Target makes FOR Save (DV 13) or gains Dazed." }
+      ]
+    },
+    {
+      "id": "warhammer",
+      "label": "Warhammer",
+      "category": "Primitive Melee Weapon",
+      "tags": ["versatile"],
+      "description": "A long shaft topped with a brutal hammer. Crush with the head or pierce with the spike on the back.",
+      "magazine_size": null,
+      "actions": [
+        { "id": "bash", "label": "Bash", "range": 1, "damage": "3d6", "damage_type": "blunt" },
+        { "id": "stun", "label": "Stun", "range": 1, "damage": "2d6", "damage_type": "blunt", "notes": "Target makes FOR Save (DV 15) or gains Dazed." },
+        { "id": "batter", "label": "Batter", "range": 1, "damage": "2d6", "damage_type": "piercing" }
+      ]
+    }
+  ],
+  "headgear": [
+    {
+      "id": "simple_helmet",
+      "label": "Simple Helmet",
+      "category": "Headgear",
+      "tags": ["bulky", "stealthy"],
+      "description": "A simple helmet which gives moderate protection against attacks.",
+      "helm_durability": 30
+    },
+    {
+      "id": "flak_helmet",
+      "label": "Flak Helmet",
+      "category": "Headgear",
+      "tags": ["bulky", "stealthy"],
+      "description": "A lightweight combat helmet with a complex design, reinforced with plasteel.",
+      "helm_durability": 40
+    },
+    {
+      "id": "recon_helmet",
+      "label": "Recon Helmet",
+      "category": "Headgear",
+      "tags": ["bulky", "stealthy"],
+      "description": "A high-tech armored helmet with a built-in status computer, Tac-Link transceiver, and a protective plasteel-weave plate.",
+      "helm_durability": 60,
+      "special_properties": ["Cold Insulation", "Heat Insulation", "Vacuum Resistance"]
+    },
+    {
+      "id": "marine_helmet",
+      "label": "Marine Helmet",
+      "category": "Headgear",
+      "tags": ["bulky", "heavy"],
+      "description": "A sturdy helmet with a built-in status computer, Tac-Link transceiver, and layered plasteel-weave plates.",
+      "helm_durability": 80,
+      "special_properties": ["Cold Insulation", "Heat Insulation", "Vacuum Resistance"]
+    }
+  ],
+  "headgear_attachments": [
+    {
+      "id": "nvgs",
+      "label": "Night Vision Goggles (NVGs)",
+      "category": "Headgear Attachment",
+      "compatible_headgear": ["simple_helmet", "flak_helmet", "recon_helmet", "marine_helmet"],
+      "description": "Allows the wearer to see clearly in near-total darkness by collecting and amplifying minuscule amounts of light.",
+      "effects": [],
+      "notes": ["Removes the penalties of Dim Light and Darkness for the wearer."]
+    },
+    {
+      "id": "tac_link",
+      "label": "Tac-Link Transceiver",
+      "category": "Headgear Attachment",
+      "compatible_headgear": ["simple_helmet", "flak_helmet", "recon_helmet", "marine_helmet"],
+      "description": "A low-profile, multi-band radio transceiver built directly into the inner liner of a helmet.",
+      "effects": [],
+      "notes": ["Allows the user to communicate via radio to fellow team members, 10-kilometer range."]
+    }
+  ],
+  "body_armor": [
+    {
+      "id": "heavy_leathers",
+      "label": "Heavy Leathers",
+      "category": "Body Armor",
+      "tags": ["stealthy"],
+      "description": "A set of clothing made of leather. Offers adequate protection while remaining quite comfortable.",
+      "armor_durability": 30
+    },
+    {
+      "id": "flak_vest",
+      "label": "Flak Vest",
+      "category": "Body Armor",
+      "tags": ["bulky", "stealthy"],
+      "description": "A vest with armor plates inserted on the chest and back.",
+      "armor_durability": 60
+    },
+    {
+      "id": "recon_armor",
+      "label": "Recon Armor",
+      "category": "Body Armor",
+      "tags": ["bulky", "stealthy"],
+      "description": "A suit of light partially-powered armor designed for quick movement. Lightweight plasteel-weave plates with neuro-memetic assistors.",
+      "armor_durability": 120,
+      "special_properties": ["Cold Insulation", "Heat Insulation", "Vacuum Resistance"]
+    },
+    {
+      "id": "marine_armor",
+      "label": "Marine Armor",
+      "category": "Body Armor",
+      "tags": ["bulky", "heavy"],
+      "description": "A suit of powered armor. Layered plasteel-weave plates with neuro-memetic assistors allow the wearer to move easier.",
+      "armor_durability": 180,
+      "special_properties": ["Cold Insulation", "Heat Insulation", "Vacuum Resistance"]
+    }
+  ],
+  "armor_attachments": [
+    {
+      "id": "ghillie_suit",
+      "label": "Ghillie Suit",
+      "category": "Body Armor Attachment",
+      "compatible_armor": ["flak_vest", "heavy_leathers", "recon_armor"],
+      "description": "A highly specialized camouflage garment designed to make wearers blend into their surroundings.",
+      "effects": [],
+      "notes": [
+        "Gives the wearer Advantage on Stealth tests while in wilderness.",
+        "Allows wearer to remain hidden if within 10 spaces of an enemy if they started their turn hidden."
+      ]
+    },
+    {
+      "id": "grenadier_attachment",
+      "label": "Grenadier Attachment",
+      "category": "Body Armor Attachment",
+      "compatible_armor": ["marine_armor"],
+      "description": "An integrated frag grenade launcher mounted to the shoulder. Holds 2 frag grenades.",
+      "effects": [{ "type": "add_weapon", "weapon_id": "shoulder_grenade_launcher" }],
+      "notes": ["Adds a specialized shoulder-mounted grenade launcher with 2 rounds."]
     }
   ],
   "attachments": [
@@ -47,21 +350,25 @@
       "id": "extended_magazine",
       "label": "Extended Magazine",
       "category": "Modern Ranged Weapon Attachment",
-      "compatible_weapons": ["machine_pistol", "submachine_gun"],
+      "compatible_weapons": ["assault_rifle", "machine_pistol", "submachine_gun"],
       "description": "Increases magazine capacity so the weapon does not run empty in a single, 6-second burst.",
       "effects": [
-        { "type": "set_magazine_size", "weapon": "machine_pistol", "value": 30 },
-        { "type": "set_magazine_size", "weapon": "submachine_gun", "value": 50 }
+        { "type": "set_magazine_size", "weapon": "assault_rifle",   "value": 40 },
+        { "type": "set_magazine_size", "weapon": "machine_pistol",  "value": 30 },
+        { "type": "set_magazine_size", "weapon": "submachine_gun",  "value": 50 }
       ]
     },
     {
       "id": "drum_magazine",
       "label": "Drum Magazine",
       "category": "Modern Ranged Weapon Attachment",
-      "compatible_weapons": ["machine_pistol", "submachine_gun"],
+      "compatible_weapons": ["assault_rifle", "light_machine_gun", "machine_pistol", "submachine_gun"],
       "description": "Useful for maximum capacity if the user is stationary or defending a fixed point, despite the added weight.",
       "effects": [
-        { "type": "set_magazine_size", "value": 100 },
+        { "type": "set_magazine_size", "weapon": "assault_rifle",    "value": 100 },
+        { "type": "set_magazine_size", "weapon": "light_machine_gun","value": 200 },
+        { "type": "set_magazine_size", "weapon": "machine_pistol",   "value": 100 },
+        { "type": "set_magazine_size", "weapon": "submachine_gun",   "value": 100 },
         { "type": "remove_tag", "tag": "light" },
         { "type": "remove_tag", "tag": "concealable" }
       ]
@@ -80,7 +387,7 @@
       "label": "Detachable Shoulder Stock",
       "category": "Modern Ranged Weapon Attachment",
       "compatible_weapons": ["machine_pistol"],
-      "description": "Transforms the weapon into a steady platform. This is the single most important attachment for controlling full-auto muzzle rise.",
+      "description": "Transforms the weapon into a steady platform. The single most important attachment for controlling full-auto muzzle rise.",
       "effects": [
         { "type": "action_save_dv_bonus", "action": "full_auto", "value": 2 },
         { "type": "remove_tag", "tag": "concealable" }
@@ -102,10 +409,24 @@
       "id": "mrds",
       "label": "Micro Red Dot Sight (MRDS)",
       "category": "Modern Ranged Weapon Attachment",
-      "compatible_weapons": ["machine_pistol", "submachine_gun"],
+      "compatible_weapons": ["assault_rifle", "machine_pistol", "submachine_gun"],
       "description": "A lightweight, low-profile optic that allows for rapid target tracking with both eyes open in close-quarters combat.",
       "effects": [
         { "type": "action_hit_bonus", "action": "single_shot", "value": 1 }
+      ]
+    },
+    {
+      "id": "suppressor",
+      "label": "Suppressor",
+      "category": "Modern Ranged Weapon Attachment",
+      "compatible_weapons": ["machine_pistol", "sniper_rifle", "submachine_gun"],
+      "description": "Quiets the muzzle blast and eliminates muzzle flash. Adds length to compact weapons and requires subsonic ammunition to be fully effective.",
+      "effects": [
+        { "type": "remove_tag", "tag": "concealable" }
+      ],
+      "notes": [
+        "Requires subsonic ammunition.",
+        "Perception tests (DV 11) to notice attacks from this weapon outside range 30."
       ]
     }
   ]

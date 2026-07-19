@@ -1065,6 +1065,16 @@ textarea.field-input {
   color: var(--text-muted);
 }
 
+.weapon-action-cost-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg-raised, #2a2a3a);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 .weapon-attachments {
   border-top: 1px solid var(--border-subtle);
   margin-top: var(--space-sm);

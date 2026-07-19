@@ -249,6 +249,7 @@ function _buildDetail(inst) {
         <button class="enc-dmg-type"        data-dmg-type="piercing"  title="½ directly to HP, ½ to armor">Piercing</button>
         <button class="enc-dmg-type"        data-dmg-type="blunt"     title="2× to armor, no HP overflow">Blunt</button>
         <button class="enc-dmg-type"        data-dmg-type="energy"    title="Bypasses armor — directly to HP">Energy</button>
+        <button class="enc-dmg-type"        data-dmg-type="shred"     title="Armor consumed at 2× rate per HP blocked">Shred</button>
       </div>
       <button class="btn btn-danger"    id="enc-dmg-btn">− Damage</button>
       <button class="btn btn-secondary" id="enc-heal-btn">＋ Heal</button>
@@ -290,6 +291,24 @@ function _buildDetail(inst) {
       let rem = toArmor;
       if (rem > 0 && inst.armor > 0) { const ab = Math.min(inst.armor, rem); inst.armor -= ab; rem -= ab; }
       if (rem > 0 && inst.helm  > 0) { inst.helm = Math.max(0, inst.helm - rem); }
+      return;
+    }
+    if (type === 'shred') {
+      // Armor consumed at 2× rate per HP it absorbs — effectively halves armor's protection value
+      let remaining = amt;
+      if (remaining > 0 && inst.armor > 0) {
+        const eff = Math.floor(inst.armor / 2);
+        const ab  = Math.min(eff, remaining);
+        inst.armor = Math.max(0, inst.armor - ab * 2);
+        remaining -= ab;
+      }
+      if (remaining > 0 && inst.helm > 0) {
+        const eff = Math.floor(inst.helm / 2);
+        const ab  = Math.min(eff, remaining);
+        inst.helm = Math.max(0, inst.helm - ab * 2);
+        remaining -= ab;
+      }
+      if (remaining > 0) inst.hp = Math.max(0, inst.hp - remaining);
       return;
     }
     // Standard: absorbed by armor first, overflow to HP
