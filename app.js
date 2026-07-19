@@ -1491,7 +1491,7 @@ function buildActionRow(weaponInst, resolved, action) {
     markActionUsed(isReaction ? 'reaction' : 'actions');
     const characterName = rollCharacterName(getChar());
     const isBurstFire = !!action.burst_fire;
-    const burstDisadvantageApplies = isBurstFire && !resolved.burst_disadvantage_removed;
+    const burstDisadvantageApplies = isBurstFire && (resolved.tags || []).includes('heavy') && !resolved.burst_disadvantage_removed;
     const attackCount = isBurstFire ? (action.attack_count || 1) : 1;
     // Heavy: Disadvantage if STR < 3 (checked at click time in case stats changed)
     const heavyDis = (resolved.tags || []).includes('heavy') && (getChar().core_stats?.strength ?? 0) < 3 ? 1 : 0;
