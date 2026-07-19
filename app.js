@@ -541,7 +541,7 @@ function openMoveModal(charId) {
   });
 }
 
-function openAssignModal(charId) {
+async function openAssignModal(charId) {
   const char = CHARACTERS[charId];
   if (!char) return;
   const backdrop = document.createElement('div');
@@ -549,12 +549,10 @@ function openAssignModal(charId) {
   backdrop.innerHTML = `
     <div class="modal">
       <div class="modal-title">Assign "${escHtml(char.name)}" to player</div>
-      <p class="campaign-note">Enter the player's email address. They must have signed in at least once so their account is registered.</p>
-      <div style="margin-bottom:12px">
-        <input id="assign-email-input" type="email" class="text-input" placeholder="player@example.com" style="width:100%;box-sizing:border-box">
-      </div>
+      <p class="campaign-note">Select a player to become the owner of this character.</p>
+      <div style="margin-bottom:12px" id="assign-select-wrap">Loading players…</div>
       <div class="modal-actions">
-        <button class="btn btn-primary" id="assign-confirm-btn">Assign</button>
+        <button class="btn btn-primary" id="assign-confirm-btn" disabled>Assign</button>
         <button class="btn btn-secondary" data-cancel>Cancel</button>
       </div>
       <div id="assign-status" style="margin-top:8px;color:#c0392b;font-size:0.85em"></div>
@@ -563,28 +561,50 @@ function openAssignModal(charId) {
   backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
   backdrop.querySelector('[data-cancel]').addEventListener('click', () => backdrop.remove());
 
-  const input = backdrop.querySelector('#assign-email-input');
+  const wrap = backdrop.querySelector('#assign-select-wrap');
+  const confirmBtn = backdrop.querySelector('#assign-confirm-btn');
   const statusEl = backdrop.querySelector('#assign-status');
-  backdrop.querySelector('#assign-confirm-btn').addEventListener('click', async () => {
-    const email = input.value.trim();
-    if (!email) { statusEl.textContent = 'Please enter an email address.'; return; }
-    statusEl.textContent = 'Looking up player…';
+
+  try {
+    const users = await window.CampaignStore.listUsers();
+    const currentOwnerId = char._cloud ? char._cloud.owner_id : null;
+    if (!users.length) {
+      wrap.textContent = 'No registered players found.';
+    } else {
+      const sel = document.createElement('select');
+      sel.className = 'text-input';
+      sel.style.cssText = 'width:100%;box-sizing:border-box';
+      users.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.user_id;
+        opt.textContent = u.email + (u.user_id === currentOwnerId ? ' (current)' : '');
+        if (u.user_id === currentOwnerId) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      wrap.textContent = '';
+      wrap.appendChild(sel);
+      confirmBtn.disabled = false;
+    }
+  } catch (err) {
+    wrap.textContent = `Could not load players: ${err.message}`;
+  }
+
+  confirmBtn.addEventListener('click', async () => {
+    const sel = wrap.querySelector('select');
+    if (!sel) return;
+    const newOwnerId = sel.value;
+    confirmBtn.disabled = true;
+    statusEl.textContent = '';
     try {
-      const newOwnerId = await window.CampaignStore.findUserByEmail(email);
-      if (!newOwnerId) {
-        statusEl.textContent = `No player found with email "${email}". They need to sign in first.`;
-        return;
-      }
       await window.CampaignStore.reassignCharacter(charId, newOwnerId);
       char._cloud = { ...char._cloud, owner_id: newOwnerId };
       backdrop.remove();
       renderCampaignArea();
     } catch (err) {
       statusEl.textContent = `Assignment failed: ${err.message}`;
+      confirmBtn.disabled = false;
     }
   });
-
-  input.focus();
 }
 
 // -----------------------------------------------

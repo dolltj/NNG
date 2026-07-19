@@ -37,6 +37,12 @@
     return data.session;
   }
 
+  async function listUsers() {
+    const { data, error } = await _need().from('profiles').select('user_id,email').order('email');
+    if (error) throw error;
+    return data;
+  }
+
   async function findUserByEmail(email) {
     const { data, error } = await _need().from('profiles').select('user_id').eq('email', email).maybeSingle();
     if (error) throw error;
@@ -111,6 +117,6 @@
     getSession, signIn, signOut,
     listCampaigns, createCampaign, deleteCampaign,
     listCharacters, fetchCharacter, upsertCharacter, deleteCharacter,
-    findUserByEmail, reassignCharacter
+    listUsers, findUserByEmail, reassignCharacter
   };
 })();
