@@ -1247,7 +1247,12 @@ function recalcDerivedStats() {
 function renderTabCombat(char) {
   const panel = document.getElementById('tab-combat');
   panel.innerHTML = `
-    <div class="section-header">Combat Stats</div>
+    <div class="combat-ability-bar" id="combat-ability-bar"></div>
+
+    <div class="section-header mt-sm">Defense Rolls</div>
+    <div class="combat-defense-row" id="combat-defense-row"></div>
+
+    <div class="section-header mt-md">Combat Stats</div>
     <div class="combat-stats-row" id="combat-stats-row"></div>
 
     <div class="section-header mt-md">Conditions</div>
@@ -1264,6 +1269,8 @@ function renderTabCombat(char) {
     </div>
   `;
 
+  buildCombatAbilityBar(char);
+  buildCombatDefenseRow(char);
   buildCombatStatsRow(char);
   buildConditionsRow(char);
   renderWeaponsList(char);
@@ -1453,13 +1460,25 @@ function buildActionRow(weaponInst, resolved, action) {
   const costLabel = isReaction ? 'Reaction' : action.action_cost === 2 ? '2 Actions' : '1 Action';
   const isUtility = action.damage == null; // no attack/damage rolls — just mark action used
 
+  const dmgType = action.damage_type || (action.damage != null ? 'standard' : null);
+  const dmgTypeMeta = {
+    standard: { label: 'Standard', title: 'Absorbed by armor first; overflow to HP' },
+    piercing: { label: 'Piercing', title: '½ damage directly to HP, ½ to armor' },
+    blunt:    { label: 'Blunt',    title: '2× effective vs. armor — no HP overflow' },
+    energy:   { label: 'Energy',   title: 'Bypasses armor entirely — straight to HP' },
+    shred:    { label: 'Shred',    title: 'Armor consumed at 2× rate per HP blocked' }
+  };
+  const dmgBadge = dmgType && dmgTypeMeta[dmgType]
+    ? `<span class="dmg-type-badge dmg-type-${dmgType}" title="${dmgTypeMeta[dmgType].title}">${dmgTypeMeta[dmgType].label}</span>`
+    : '';
+
   row.innerHTML = `
     <span class="weapon-action-label">${escHtml(action.label)}</span>
     <span class="weapon-action-cost-badge">${escHtml(costLabel)}</span>
     <span class="weapon-action-meta">Rng ${escHtml(String(action.range ?? '—'))}${escHtml(notesText)}${heavyPenaltyActive ? ' ⚠ Heavy (Disadvantage — STR < 3)' : ''}</span>
     ${isUtility
       ? `<button class="btn btn-secondary weapon-use-btn"${insufficientAmmo ? ' disabled' : ''}>Use</button>`
-      : `<button class="attack-roll-btn"${insufficientAmmo ? ' disabled' : ''}>🎲 Attack</button>
+      : `${dmgBadge}<button class="attack-roll-btn"${insufficientAmmo ? ' disabled' : ''}>🎲 Attack</button>
          <button class="damage-roll-btn">⚔ ${escHtml(action.damage)}</button>`}
   `;
 
@@ -1559,21 +1578,74 @@ function buildConditionsRow(char) {
   });
 }
 
+function buildCombatAbilityBar(char) {
+  const wrap = document.getElementById('combat-ability-bar');
+  wrap.innerHTML = '';
+  const stats = [
+    { id: 'strength',  abbr: 'STR' },
+    { id: 'agility',   abbr: 'AGI' },
+    { id: 'fortitude', abbr: 'FOR' },
+    { id: 'willpower', abbr: 'WIL' }
+  ];
+  stats.forEach(s => {
+    const val = char.core_stats?.[s.id] ?? 0;
+    const chip = document.createElement('div');
+    chip.className = 'combat-ability-chip';
+    chip.innerHTML = `
+      <span class="combat-ability-abbr">${s.abbr}</span>
+      <span class="combat-ability-val">${val}</span>
+      <button class="ability-roll-btn combat-ability-roll" title="2d10 + ${s.abbr} Test">🎲</button>`;
+    chip.querySelector('.combat-ability-roll').addEventListener('click', e => {
+      const cur = getChar().core_stats[s.id] ?? 0;
+      const label = `${s.abbr} Test`;
+      const characterName = rollCharacterName(getChar());
+      if (e.shiftKey) {
+        openAdvantageModal({ label, baseDieCount: 2, modifier: cur, characterName });
+        return;
+      }
+      window.Roll20Bridge.sendToRoll20({ label, formula: buildTestFormula(cur), characterName });
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+function buildCombatDefenseRow(char) {
+  const wrap = document.getElementById('combat-defense-row');
+  wrap.innerHTML = '';
+  [
+    { label: 'Evade', stat: 'agility',   title: '2d10 + AGI' },
+    { label: 'Block', stat: 'fortitude', title: '2d10 + FOR — requires a shield' },
+    { label: 'Parry', stat: 'willpower', title: '2d10 + WIL — requires a melee weapon, vs melee only' }
+  ].forEach(def => {
+    const val = char.core_stats?.[def.stat] ?? 0;
+    const btn = document.createElement('button');
+    btn.className = 'combat-defense-btn';
+    btn.title = def.title;
+    btn.innerHTML = `<span class="combat-defense-label">${def.label}</span><span class="combat-defense-mod">2d10+${val}</span><span class="combat-defense-icon">🎲</span>`;
+    btn.addEventListener('click', e => {
+      const mod = getChar().core_stats[def.stat] ?? 0;
+      const characterName = rollCharacterName(getChar());
+      if (e.shiftKey) {
+        openAdvantageModal({ label: def.label, baseDieCount: 2, modifier: mod, characterName });
+        return;
+      }
+      window.Roll20Bridge.sendToRoll20({ label: def.label, formula: buildTestFormula(mod), characterName });
+    });
+    wrap.appendChild(btn);
+  });
+}
+
 function buildCombatStatsRow(char) {
   const wrap = document.getElementById('combat-stats-row');
   wrap.innerHTML = '';
 
-  const chips = [
+  [
     { label: 'Head Armor', value: char.armor.head, field: 'head' },
     { label: 'Body Armor', value: char.armor.body, field: 'body' },
     { label: 'Speed',      value: char.speed,       field: 'speed' }
-  ];
-
-  chips.forEach(chip => {
+  ].forEach(chip => {
     const el = document.createElement('div');
     el.className = 'combat-stat-chip';
-    // Perks can raise Speed (e.g. Speed Freak). The input keeps the player's
-    // base value; the effective total renders beside it when they differ.
     const effSpeed = chip.field === 'speed' ? applyPerkModifiers(char, 'speed', char.speed) : null;
     const suffix = (effSpeed != null && effSpeed !== char.speed)
       ? `<span title="Base ${char.speed} + perk modifiers">→ ${effSpeed}</span>` : '';
@@ -1590,62 +1662,6 @@ function buildCombatStatsRow(char) {
     });
     wrap.appendChild(el);
   });
-
-  const initEl = document.createElement('div');
-  initEl.className = 'combat-stat-chip';
-  initEl.innerHTML = `
-    <span class="combat-stat-chip-label">Initiative</span>
-    <span class="combat-stat-chip-value combat-stat-chip-value-row">
-      <input type="number" value="${char.initiative_bonus}" data-combat-field="initiative_bonus" style="width:40px">
-      <button class="ability-roll-btn" id="roll-initiative-btn" title="Roll 1d10 + AGI + Bonus">🎲</button>
-    </span>`;
-  initEl.querySelector('input').addEventListener('change', e => {
-    getChar().initiative_bonus = parseInt(e.target.value) || 0;
-    scheduleSave();
-  });
-  initEl.querySelector('#roll-initiative-btn').addEventListener('click', e => {
-    const agi = getChar().core_stats.agility ?? 0;
-    const bonus = getChar().initiative_bonus ?? 0;
-    const mod = applyPerkModifiers(getChar(), 'initiative', agi + bonus);
-    const characterName = rollCharacterName(getChar());
-    if (e.shiftKey) {
-      openAdvantageModal({ label: 'Initiative', baseDieCount: 1, modifier: mod, characterName });
-      return;
-    }
-    const formula = mod >= 0 ? `1d10 + ${mod}` : `1d10 - ${Math.abs(mod)}`;
-    window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName });
-  });
-  wrap.appendChild(initEl);
-
-  // Defense Rolls (NNGRules: Evade / Block / Parry). Requirements (shield,
-  // melee weapon) aren't tracked by the sheet yet — stated in tooltips.
-  const defEl = document.createElement('div');
-  defEl.className = 'combat-stat-chip';
-  defEl.innerHTML = `
-    <span class="combat-stat-chip-label">Defense Rolls</span>
-    <span class="combat-stat-chip-value combat-stat-chip-value-row"></span>`;
-  const defWrap = defEl.querySelector('.combat-stat-chip-value-row');
-  [
-    { label: 'Evade', stat: 'agility',   title: '2d10 + AGI' },
-    { label: 'Block', stat: 'fortitude', title: '2d10 + FOR — requires an equipped shield' },
-    { label: 'Parry', stat: 'willpower', title: '2d10 + WIL — requires a melee weapon, vs melee attacks only' }
-  ].forEach(def => {
-    const btn = document.createElement('button');
-    btn.className = 'ability-roll-btn';
-    btn.textContent = `🎲 ${def.label}`;
-    btn.title = def.title;
-    btn.addEventListener('click', e => {
-      const mod = getChar().core_stats[def.stat] ?? 0;
-      const characterName = rollCharacterName(getChar());
-      if (e.shiftKey) {
-        openAdvantageModal({ label: def.label, baseDieCount: 2, modifier: mod, characterName });
-        return;
-      }
-      window.Roll20Bridge.sendToRoll20({ label: def.label, formula: buildTestFormula(mod), characterName });
-    });
-    defWrap.appendChild(btn);
-  });
-  wrap.appendChild(defEl);
 }
 
 // -----------------------------------------------
@@ -1701,14 +1717,44 @@ function renderTabActions(char) {
     panel.appendChild(h);
   };
 
-  // --- Turn tracker ---
+  // --- Top bar: Initiative (left) + compact turn tracker (right) ---
+  const topBar = document.createElement('div');
+  topBar.className = 'actions-top-bar';
+
+  // Initiative
+  const initSide = document.createElement('div');
+  initSide.className = 'actions-initiative';
+  initSide.innerHTML = `
+    <span class="combat-stat-chip-label">Initiative</span>
+    <span style="font-size:0.75rem;color:var(--text-muted)">bonus</span>
+    <input type="number" class="currency-input" value="${char.initiative_bonus ?? 0}" style="width:40px" id="actions-init-input">
+    <button class="ability-roll-btn" id="actions-init-btn" title="Roll 1d10 + AGI + bonus">🎲 Roll</button>
+  `;
+  initSide.querySelector('#actions-init-input').addEventListener('change', e => {
+    getChar().initiative_bonus = parseInt(e.target.value) || 0;
+    scheduleSave();
+  });
+  initSide.querySelector('#actions-init-btn').addEventListener('click', e => {
+    const agi = getChar().core_stats.agility ?? 0;
+    const bonus = getChar().initiative_bonus ?? 0;
+    const mod = applyPerkModifiers(getChar(), 'initiative', agi + bonus);
+    const characterName = rollCharacterName(getChar());
+    if (e.shiftKey) {
+      openAdvantageModal({ label: 'Initiative', baseDieCount: 1, modifier: mod, characterName });
+      return;
+    }
+    const formula = mod >= 0 ? `1d10 + ${mod}` : `1d10 - ${Math.abs(mod)}`;
+    window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName });
+  });
+
+  // Compact turn tracker
   const tracker = getTurnTracker(char.id);
-  const bar = document.createElement('div');
-  bar.className = 'turn-tracker';
+  const trackerSide = document.createElement('div');
+  trackerSide.className = 'actions-turn-tracker';
   [
-    { key: 'actions',  label: 'Actions',  count: 2 },
-    { key: 'quick',    label: 'Quick',    count: 1 },
-    { key: 'reaction', label: 'Reaction', count: 1 }
+    { key: 'actions',  label: 'ACT', count: 2 },
+    { key: 'quick',    label: 'QK',  count: 1 },
+    { key: 'reaction', label: 'RX',  count: 1 }
   ].forEach(g => {
     const group = document.createElement('span');
     group.className = 'turn-tracker-group';
@@ -1716,7 +1762,7 @@ function renderTabActions(char) {
     for (let i = 0; i < g.count; i++) {
       const pip = document.createElement('button');
       pip.className = 'turn-pip' + (tracker[g.key] > i ? ' used' : '');
-      pip.title = `${g.label} — click to mark used / available`;
+      pip.title = `${g.label} — click to toggle`;
       pip.addEventListener('click', () => {
         tracker[g.key] = tracker[g.key] > i ? i : i + 1;
         renderTabActions(getChar());
@@ -1724,26 +1770,30 @@ function renderTabActions(char) {
       });
       group.appendChild(pip);
     }
-    bar.appendChild(group);
+    trackerSide.appendChild(group);
   });
   const newTurnBtn = document.createElement('button');
   newTurnBtn.className = 'btn btn-secondary';
+  newTurnBtn.style.padding = '2px 8px';
   newTurnBtn.textContent = '↻ New Turn';
-  newTurnBtn.title = 'Reset all pips. Rules note: you may trade 1 Action for 2 Quick Actions — track that however suits you.';
+  newTurnBtn.title = 'Reset all pips (you may trade 1 Action for 2 Quick Actions)';
   newTurnBtn.addEventListener('click', () => {
     TURN_TRACKER[char.id] = { actions: 0, quick: 0, reaction: 0 };
     renderTabActions(getChar());
     applyViewOnlyMode();
   });
-  bar.appendChild(newTurnBtn);
+  trackerSide.appendChild(newTurnBtn);
   if ((char.conditions || []).length > 0) {
     const cond = document.createElement('span');
     cond.className = 'turn-tracker-conditions';
     cond.title = 'Active conditions — toggle them on the Combat tab';
     cond.textContent = `⚠ ${char.conditions.join(', ')}`;
-    bar.appendChild(cond);
+    trackerSide.appendChild(cond);
   }
-  panel.appendChild(bar);
+
+  topBar.appendChild(initSide);
+  topBar.appendChild(trackerSide);
+  panel.appendChild(topBar);
 
   // --- Weapon attacks ---
   addHeader('Weapon Attacks');

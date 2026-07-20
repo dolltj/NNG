@@ -791,6 +791,148 @@ textarea.field-input {
 /* =============================================
    PROFICIENCY & COMBAT STATS ROW
    ============================================= */
+/* ---- Combat ability bar ---- */
+.combat-ability-bar {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-sm);
+}
+
+.combat-ability-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  padding: 6px 12px;
+  flex: 1;
+  min-width: 100px;
+}
+
+.combat-ability-abbr {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.combat-ability-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 20px;
+  text-align: center;
+}
+
+.combat-ability-roll {
+  margin-left: auto;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
+/* ---- Defense roll row ---- */
+.combat-defense-row {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+
+.combat-defense-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 100px;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text-primary);
+}
+
+.combat-defense-btn:hover {
+  border-color: var(--accent);
+  background: var(--bg-raised);
+}
+
+.combat-defense-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.combat-defense-mod {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.combat-defense-icon {
+  font-size: 1rem;
+}
+
+/* ---- Actions tab top bar ---- */
+.actions-top-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: var(--space-md);
+}
+
+.actions-initiative {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.actions-turn-tracker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+/* ---- Damage type badges on weapon actions ---- */
+.dmg-type-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+  cursor: default;
+  opacity: 0.9;
+}
+
+.dmg-type-standard { background: #444; color: #ccc; }
+.dmg-type-piercing  { background: #1a5276; color: #aed6f1; }
+.dmg-type-blunt     { background: #784212; color: #fad7a0; }
+.dmg-type-energy    { background: #4a235a; color: #d2b4de; }
+.dmg-type-shred     { background: #7b241c; color: #fadbd8; }
+
+@media (prefers-color-scheme: light) {
+  .dmg-type-standard { background: #ccc; color: #333; }
+  .dmg-type-piercing  { background: #aed6f1; color: #1a5276; }
+  .dmg-type-blunt     { background: #fad7a0; color: #784212; }
+  .dmg-type-energy    { background: #d2b4de; color: #4a235a; }
+  .dmg-type-shred     { background: #fadbd8; color: #7b241c; }
+}
+
 .combat-stats-row {
   display: flex;
   gap: var(--space-sm);
