@@ -1247,12 +1247,7 @@ function recalcDerivedStats() {
 function renderTabCombat(char) {
   const panel = document.getElementById('tab-combat');
   panel.innerHTML = `
-    <div class="combat-ability-bar" id="combat-ability-bar"></div>
-
-    <div class="section-header mt-sm">Defense Rolls</div>
-    <div class="combat-defense-row" id="combat-defense-row"></div>
-
-    <div class="section-header mt-md">Combat Stats</div>
+    <div class="section-header">Combat Stats</div>
     <div class="combat-stats-row" id="combat-stats-row"></div>
 
     <div class="section-header mt-md">Conditions</div>
@@ -1269,8 +1264,6 @@ function renderTabCombat(char) {
     </div>
   `;
 
-  buildCombatAbilityBar(char);
-  buildCombatDefenseRow(char);
   buildCombatStatsRow(char);
   buildConditionsRow(char);
   renderWeaponsList(char);
@@ -1794,6 +1787,24 @@ function renderTabActions(char) {
   topBar.appendChild(initSide);
   topBar.appendChild(trackerSide);
   panel.appendChild(topBar);
+
+  // --- Ability rolls + defense rolls ---
+  const abilityBarEl = document.createElement('div');
+  abilityBarEl.className = 'combat-ability-bar';
+  abilityBarEl.id = 'combat-ability-bar';
+  panel.appendChild(abilityBarEl);
+  buildCombatAbilityBar(char);
+
+  const defHeaderEl = document.createElement('div');
+  defHeaderEl.className = 'section-header mt-sm';
+  defHeaderEl.textContent = 'Defense Rolls';
+  panel.appendChild(defHeaderEl);
+
+  const defRowEl = document.createElement('div');
+  defRowEl.className = 'combat-defense-row';
+  defRowEl.id = 'combat-defense-row';
+  panel.appendChild(defRowEl);
+  buildCombatDefenseRow(char);
 
   // --- Weapon attacks ---
   addHeader('Weapon Attacks');
