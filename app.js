@@ -1710,11 +1710,69 @@ function renderTabActions(char) {
     panel.appendChild(h);
   };
 
-  // --- Top bar: Initiative (left) + compact turn tracker (right) ---
+  // --- Top bar ---
   const topBar = document.createElement('div');
   topBar.className = 'actions-top-bar';
 
-  // Initiative
+  // Row 1: HP + armor tracking
+  const resourcesRow = document.createElement('div');
+  resourcesRow.className = 'actions-resources-row';
+
+  const hpCurrent = char.resources?.hp?.current ?? 0;
+  const hpMax     = deriveMaxHP(char);
+  const hpPct     = hpMax > 0 ? Math.round((hpCurrent / hpMax) * 100) : 0;
+  const hpDiv = document.createElement('div');
+  hpDiv.className = 'actions-hp-block';
+  hpDiv.innerHTML = `
+    <span class="actions-res-label">HP</span>
+    <button class="resource-btn actions-hp-btn" data-delta="-1">−</button>
+    <input type="number" class="currency-input actions-hp-input" value="${hpCurrent}" style="width:50px" id="actions-hp-input">
+    <span class="actions-res-sep">/ ${hpMax}</span>
+    <button class="resource-btn actions-hp-btn" data-delta="1">＋</button>
+    <div class="actions-hp-bar-wrap"><div class="actions-hp-bar" style="width:${hpPct}%"></div></div>
+  `;
+  const hpInput = hpDiv.querySelector('#actions-hp-input');
+  const hpBar   = hpDiv.querySelector('.actions-hp-bar');
+  const updateHP = val => {
+    const max = deriveMaxHP(getChar());
+    val = Math.max(0, Math.min(max, val));
+    getChar().resources.hp.current = val;
+    hpInput.value = val;
+    hpBar.style.width = max > 0 ? `${Math.round(val / max * 100)}%` : '0%';
+    hpBar.style.background = val / max < 0.3 ? '#c0392b' : val / max < 0.6 ? '#e67e22' : '#27ae60';
+    scheduleSave();
+  };
+  hpInput.addEventListener('change', e => updateHP(parseInt(e.target.value) || 0));
+  hpDiv.querySelectorAll('[data-delta]').forEach(btn =>
+    btn.addEventListener('click', () => updateHP((getChar().resources.hp.current ?? 0) + parseInt(btn.dataset.delta)))
+  );
+  // Set initial bar color
+  hpBar.style.background = hpPct < 30 ? '#c0392b' : hpPct < 60 ? '#e67e22' : '#27ae60';
+  resourcesRow.appendChild(hpDiv);
+
+  [
+    { label: 'HEAD', field: 'head', value: char.armor?.head ?? 0 },
+    { label: 'BODY', field: 'body', value: char.armor?.body ?? 0 }
+  ].forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'actions-armor-block';
+    div.innerHTML = `
+      <span class="actions-res-label">${a.label}</span>
+      <input type="number" class="currency-input" value="${a.value}" style="width:50px">
+    `;
+    div.querySelector('input').addEventListener('change', e => {
+      getChar().armor[a.field] = parseInt(e.target.value) || 0;
+      scheduleSave();
+    });
+    resourcesRow.appendChild(div);
+  });
+
+  topBar.appendChild(resourcesRow);
+
+  // Row 2: Initiative (left) + compact turn tracker (right)
+  const economyRow = document.createElement('div');
+  economyRow.className = 'actions-economy-row';
+
   const initSide = document.createElement('div');
   initSide.className = 'actions-initiative';
   initSide.innerHTML = `
@@ -1740,7 +1798,6 @@ function renderTabActions(char) {
     window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName });
   });
 
-  // Compact turn tracker
   const tracker = getTurnTracker(char.id);
   const trackerSide = document.createElement('div');
   trackerSide.className = 'actions-turn-tracker';
@@ -1784,8 +1841,9 @@ function renderTabActions(char) {
     trackerSide.appendChild(cond);
   }
 
-  topBar.appendChild(initSide);
-  topBar.appendChild(trackerSide);
+  economyRow.appendChild(initSide);
+  economyRow.appendChild(trackerSide);
+  topBar.appendChild(economyRow);
   panel.appendChild(topBar);
 
   // --- Ability rolls + defense rolls ---

@@ -878,15 +878,76 @@ textarea.field-input {
 
 /* ---- Actions tab top bar ---- */
 .actions-top-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Row 1: HP + armor */
+.actions-resources-row {
   display: flex;
   align-items: center;
   gap: var(--space-md);
   flex-wrap: wrap;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: var(--space-md);
+}
+
+.actions-hp-block {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 180px;
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.actions-armor-block {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actions-res-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.actions-res-sep {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.actions-hp-bar-wrap {
+  flex-basis: 100%;
+  height: 4px;
+  background: var(--bg-raised, #2a2a3a);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.actions-hp-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.2s, background 0.3s;
+}
+
+/* Row 2: Initiative + turn tracker */
+.actions-economy-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 8px;
 }
 
 .actions-initiative {
