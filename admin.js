@@ -812,7 +812,7 @@ function _weaponToActionGroup(weapon) {
   return {
     label: weapon.label,
     tags:  weapon.tags || [],
-    actions: (weapon.actions || []).map(a => ({
+    actions: (weapon.actions || []).filter(a => !a.is_reload).map(a => ({
       label:  a.label,
       cost:   '1 Action',
       range:  String(a.range ?? '1'),

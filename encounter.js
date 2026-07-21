@@ -164,15 +164,19 @@ function _refreshAllCardTrackers() {
   });
 }
 
+// Shared turn-economy definition — single source of truth for pip groups.
+// app.js carries its own copy (TURN_PIP_GROUPS) for the character sheet tracker.
+const TURN_PIP_GROUPS = [
+  { key: 'actions',  label: 'ACT',      fullLabel: 'Actions',  max: 2 },
+  { key: 'quick',    label: 'QK',       fullLabel: 'Quick',    max: 1 },
+  { key: 'reaction', label: 'Reaction', fullLabel: 'Reaction', max: 1 }
+];
+
 // -----------------------------------------------
 // TURN-TRACKER PIPS HTML (for card badges)
 // -----------------------------------------------
 function _pipsHtml(tracker) {
-  return [
-    { key: 'actions',  label: 'ACT', max: 2 },
-    { key: 'quick',    label: 'QK',  max: 1 },
-    { key: 'reaction', label: 'RX',  max: 1 }
-  ].map(g => `
+  return TURN_PIP_GROUPS.map(g => `
     <span class="enc-pip-group">
       <span class="enc-pip-label">${g.label}</span>
       ${Array.from({ length: g.max }, (_, i) =>
@@ -276,11 +280,11 @@ function _buildDetail(inst) {
       return;
     }
     if (type === 'blunt') {
-      // 2× effective vs. armor; no overflow to HP
+      // 2× effective vs. armor; leftover converts back (÷2) to HP so unarmored targets still take damage
       let remaining = amt * 2;
       if (inst.armor > 0) { const ab = Math.min(inst.armor, remaining); inst.armor -= ab; remaining -= ab; }
-      if (remaining > 0 && inst.helm > 0) { const ab = Math.min(inst.helm, remaining); inst.helm -= ab; }
-      // No overflow to HP for blunt
+      if (remaining > 0 && inst.helm > 0) { const ab = Math.min(inst.helm, remaining); inst.helm -= ab; remaining -= ab; }
+      if (remaining > 0) inst.hp = Math.max(0, inst.hp - Math.floor(remaining / 2));
       return;
     }
     if (type === 'piercing') {
@@ -502,14 +506,10 @@ function _buildDetail(inst) {
 // Build (or rebuild) the tracker bar inside the detail panel without re-rendering the full detail
 function _buildDetailTrackerBar(bar, inst) {
   bar.innerHTML = '';
-  [
-    { key: 'actions',  label: 'Actions',  max: 2 },
-    { key: 'quick',    label: 'Quick',    max: 1 },
-    { key: 'reaction', label: 'Reaction', max: 1 }
-  ].forEach(g => {
+  TURN_PIP_GROUPS.forEach(g => {
     const grp = document.createElement('span');
     grp.className = 'turn-tracker-group';
-    grp.innerHTML = `<span class="turn-tracker-label">${g.label}</span>`;
+    grp.innerHTML = `<span class="turn-tracker-label">${g.fullLabel}</span>`;
     for (let i = 0; i < g.max; i++) {
       const pip = document.createElement('button');
       pip.className = 'turn-pip' + (inst.tracker[g.key] > i ? ' used' : '');

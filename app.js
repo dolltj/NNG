@@ -332,7 +332,20 @@ async function renderCampaignArea() {
 }
 
 function cloudRowToChar(row) {
-  return { ...row.data, id: row.id, _cloud: { campaign_id: row.campaign_id, owner_id: row.owner_id } };
+  const base = buildDefaultCharacter(row.id);
+  const data = row.data || {};
+  return {
+    ...base,
+    ...data,
+    // Deep-merge collections so new keys added to CONFIG are always present
+    core_stats:  { ...base.core_stats,  ...(data.core_stats  || {}) },
+    resources:   { ...base.resources,   ...(data.resources   || {}) },
+    skills:      { ...base.skills,      ...(data.skills      || {}) },
+    armor:       { ...base.armor,       ...(data.armor       || {}) },
+    origin_perk: { ...base.origin_perk, ...(data.origin_perk || {}) },
+    id:     row.id,
+    _cloud: { campaign_id: row.campaign_id, owner_id: row.owner_id }
+  };
 }
 
 function buildCampaignBlock(campaign, rows) {
@@ -1574,13 +1587,7 @@ function buildConditionsRow(char) {
 function buildCombatAbilityBar(char) {
   const wrap = document.getElementById('combat-ability-bar');
   wrap.innerHTML = '';
-  const stats = [
-    { id: 'strength',  abbr: 'STR' },
-    { id: 'agility',   abbr: 'AGI' },
-    { id: 'fortitude', abbr: 'FOR' },
-    { id: 'willpower', abbr: 'WIL' }
-  ];
-  stats.forEach(s => {
+  CONFIG.core_stats.forEach(s => {
     const val = char.core_stats?.[s.id] ?? 0;
     const chip = document.createElement('div');
     chip.className = 'combat-ability-chip';
@@ -1681,6 +1688,12 @@ function refreshWeaponViews() {
 // turn pips reset on reload and aren't worth cloud-save churn mid-combat.
 let TURN_TRACKER = {};
 const TURN_PIP_MAX = { actions: 2, quick: 1, reaction: 1 };
+// Mirrors encounter.js TURN_PIP_GROUPS — update both if action economy changes.
+const TURN_PIP_GROUPS = [
+  { key: 'actions',  label: 'ACT', max: 2 },
+  { key: 'quick',    label: 'QK',  max: 1 },
+  { key: 'reaction', label: 'RX',  max: 1 }
+];
 function getTurnTracker(charId) {
   if (!TURN_TRACKER[charId]) TURN_TRACKER[charId] = { actions: 0, quick: 0, reaction: 0 };
   return TURN_TRACKER[charId];
@@ -1794,22 +1807,18 @@ function renderTabActions(char) {
       openAdvantageModal({ label: 'Initiative', baseDieCount: 1, modifier: mod, characterName });
       return;
     }
-    const formula = mod >= 0 ? `1d10 + ${mod}` : `1d10 - ${Math.abs(mod)}`;
+    const formula = mod > 0 ? `1d10 + ${mod}` : mod < 0 ? `1d10 - ${Math.abs(mod)}` : '1d10';
     window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName });
   });
 
   const tracker = getTurnTracker(char.id);
   const trackerSide = document.createElement('div');
   trackerSide.className = 'actions-turn-tracker';
-  [
-    { key: 'actions',  label: 'ACT', count: 2 },
-    { key: 'quick',    label: 'QK',  count: 1 },
-    { key: 'reaction', label: 'RX',  count: 1 }
-  ].forEach(g => {
+  TURN_PIP_GROUPS.forEach(g => {
     const group = document.createElement('span');
     group.className = 'turn-tracker-group';
     group.innerHTML = `<span class="turn-tracker-label">${g.label}</span>`;
-    for (let i = 0; i < g.count; i++) {
+    for (let i = 0; i < g.max; i++) {
       const pip = document.createElement('button');
       pip.className = 'turn-pip' + (tracker[g.key] > i ? ' used' : '');
       pip.title = `${g.label} — click to toggle`;

@@ -29,11 +29,12 @@
     const { data, error } = await _need().auth.signInWithPassword({ email, password });
     if (error) throw error;
     // Register email in profiles so GMs can look up players by email
-    await _need().from('profiles').upsert({
+    const { error: profileErr } = await _need().from('profiles').upsert({
       user_id: data.session.user.id,
       email: data.session.user.email,
       updated_at: new Date().toISOString()
     });
+    if (profileErr) console.warn('profiles upsert failed (GM assign will not see this player):', profileErr.message);
     return data.session;
   }
 
