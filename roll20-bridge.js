@@ -90,7 +90,10 @@
     }
 
     panel.innerHTML = `
-      <div class="roll-log-title">Sent Rolls</div>
+      <div class="roll-log-header">
+        <span class="roll-log-title">Sent Rolls</span>
+        <button class="roll-log-close" title="Dismiss">✕</button>
+      </div>
       ${_rollLog.map(r => `
         <div class="roll-log-entry">
           <span class="roll-log-formula">${window.escHtml(r.formula)}</span>
@@ -98,6 +101,10 @@
         </div>
       `).join('')}
     `;
+    panel.querySelector('.roll-log-close').addEventListener('click', () => {
+      panel.classList.remove('visible');
+      _rollLog.length = 0;
+    });
     panel.classList.add('visible');
   }
 

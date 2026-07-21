@@ -1494,7 +1494,15 @@ textarea.field-input {
 
 #roll-log-panel.visible {
   opacity: 1;
+  pointer-events: auto;
   transform: translateY(0);
+}
+
+.roll-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xs);
 }
 
 .roll-log-title {
@@ -1503,8 +1511,19 @@ textarea.field-input {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: var(--space-xs);
 }
+
+.roll-log-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+.roll-log-close:hover { opacity: 1; color: var(--text-primary); }
 
 .roll-log-entry {
   display: flex;
