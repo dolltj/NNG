@@ -124,14 +124,14 @@
     const droppedHtml = ev.dropped.map(v =>
       `<span class="die-box die-dropped">${window.escHtml(String(v))}</span>`).join('');
     const modHtml = ev.modifier !== 0
-      ? `<span class="roll-modifier">${ev.modifier > 0 ? '+' : ''}${ev.modifier}</span>`
+      ? `<span class="roll-modifier">${ev.modifier > 0 ? '+' : ''}${window.escHtml(String(ev.modifier))}</span>`
       : '';
     const critHtml = ev.isDoubles ? `<span class="roll-crit">⚡ CRIT!</span>` : '';
     return `
     <div class="roll-log-entry roll-log-entry-integrated">
       <div class="roll-log-dice-row">
         ${keptHtml}${droppedHtml}${modHtml}
-        <span class="roll-total">= ${ev.total}</span>
+        <span class="roll-total">= ${window.escHtml(String(ev.total))}</span>
         ${critHtml}
       </div>
       <span class="roll-log-label">${window.escHtml(entry.label)}</span>
