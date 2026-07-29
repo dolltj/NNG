@@ -186,3 +186,16 @@ test('evaluateFormula: 1d1 announcement formula', () => {
   assert.strictEqual(r.total, 1);
   assert.strictEqual(r.isDoubles, false);
 });
+
+test('evaluateFormula: invalid formula returns zero result', () => {
+  const r = dice.evaluateFormula('not a formula');
+  assert.deepStrictEqual(r, { dice: [], kept: [], dropped: [], modifier: 0, total: 0, isDoubles: false });
+});
+
+test('evaluateFormula: advantage with modifier (4d10kh2 + 3)', () => {
+  const r = dice.evaluateFormula('4d10kh2 + 3');
+  assert.strictEqual(r.kept.length, 2);
+  assert.strictEqual(r.dropped.length, 2);
+  assert.strictEqual(r.modifier, 3);
+  assert.strictEqual(r.total, r.kept[0] + r.kept[1] + 3);
+});

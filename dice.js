@@ -155,7 +155,7 @@ function evaluateFormula(formula) {
   }
 
   const total     = kept.reduce((s, v) => s + v, 0) + modifier;
-  const isDoubles = kept.length >= 2 && kept.every(function(v) { return v === kept[0]; });
+  const isDoubles = kept.length >= 2 && kept.every(v => v === kept[0]);
 
   return { dice: dice, kept: kept, dropped: dropped, modifier: modifier, total: total, isDoubles: isDoubles };
 }
