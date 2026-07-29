@@ -76,18 +76,33 @@
    */
   function sendToRoll20(rollData) {
     _logRoll(rollData);
-    // In integrated mode, send the pre-evaluated total instead of the formula
-    // so Roll20 displays the same result the player saw rather than re-rolling.
+    // In integrated mode, send the kept-dice breakdown (e.g. "7+8+5") so Roll20
+    // shows the same numbers the player saw, and append CRIT to the label on doubles.
     const evalResult = _rollLog[0] && _rollLog[0].evalResult;
-    const sendData = (getRollMode() === 'integrated' && evalResult)
-      ? Object.assign({}, rollData, { formula: String(evalResult.total) })
-      : rollData;
+    let sendData = rollData;
+    if (getRollMode() === 'integrated' && evalResult) {
+      const breakdown = _buildBreakdownFormula(evalResult);
+      if (breakdown) {
+        const label = evalResult.isDoubles
+          ? (rollData.label || '') + ' ⚡ CRIT!'
+          : rollData.label;
+        sendData = Object.assign({}, rollData, { formula: breakdown, label: label });
+      }
+    }
     if (_beyond20Available) {
       _sendViaBeyond20(sendData);
       showRollToast('🎲 Sent to Roll20!', 'success');
     } else {
       _sendViaClipboard(sendData);
     }
+  }
+
+  function _buildBreakdownFormula(evalResult) {
+    if (!evalResult.kept.length) return null;
+    const dicePart = evalResult.kept.join('+');
+    if (evalResult.modifier > 0) return dicePart + '+' + evalResult.modifier;
+    if (evalResult.modifier < 0) return dicePart + evalResult.modifier;
+    return dicePart;
   }
 
   /**
