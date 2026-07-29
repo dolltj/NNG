@@ -76,11 +76,17 @@
    */
   function sendToRoll20(rollData) {
     _logRoll(rollData);
+    // In integrated mode, send the pre-evaluated total instead of the formula
+    // so Roll20 displays the same result the player saw rather than re-rolling.
+    const evalResult = _rollLog[0] && _rollLog[0].evalResult;
+    const sendData = (getRollMode() === 'integrated' && evalResult)
+      ? Object.assign({}, rollData, { formula: String(evalResult.total) })
+      : rollData;
     if (_beyond20Available) {
-      _sendViaBeyond20(rollData);
+      _sendViaBeyond20(sendData);
       showRollToast('🎲 Sent to Roll20!', 'success');
     } else {
-      _sendViaClipboard(rollData);
+      _sendViaClipboard(sendData);
     }
   }
 
