@@ -122,7 +122,7 @@ function buildAdvantageFormula(baseDieCount, modifier, advantage = 0, disadvanta
  * Evaluate a dice formula string client-side.
  * Handles: XdY, XdYkhZ, XdYklZ, optional +/- N modifier.
  * Returns { dice, kept, dropped, modifier, total, isDoubles }.
- * isDoubles: true when kept.length >= 2 and all kept values are equal.
+ * isDoubles: true when rolling d10s, kept.length >= 2, and all kept values are equal.
  */
 function evaluateFormula(formula) {
   const m = String(formula).trim().match(
@@ -155,7 +155,7 @@ function evaluateFormula(formula) {
   }
 
   const total     = kept.reduce((s, v) => s + v, 0) + modifier;
-  const isDoubles = kept.length >= 2 && kept.every(v => v === kept[0]);
+  const isDoubles = sides === 10 && kept.length >= 2 && kept.every(v => v === kept[0]);
 
   return { dice: dice, kept: kept, dropped: dropped, modifier: modifier, total: total, isDoubles: isDoubles };
 }

@@ -180,6 +180,15 @@ test('evaluateFormula: weapon damage 2d6 + 4', () => {
   assert.ok(r.kept.every(v => v >= 1 && v <= 6));
 });
 
+test('evaluateFormula: isDoubles false for non-d10 even when kept dice match', () => {
+  const origRandom = Math.random;
+  Math.random = () => 0;  // all dice = 1
+  const r = dice.evaluateFormula('2d6');
+  Math.random = origRandom;
+  assert.deepStrictEqual(r.kept, [1, 1]);
+  assert.strictEqual(r.isDoubles, false, 'crits only fire on d10 rolls');
+});
+
 test('evaluateFormula: 1d1 announcement formula', () => {
   const r = dice.evaluateFormula('1d1');
   assert.deepStrictEqual(r.kept, [1]);
