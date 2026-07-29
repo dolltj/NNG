@@ -118,11 +118,53 @@ function buildAdvantageFormula(baseDieCount, modifier, advantage = 0, disadvanta
   return dicePart;
 }
 
+/**
+ * Evaluate a dice formula string client-side.
+ * Handles: XdY, XdYkhZ, XdYklZ, optional +/- N modifier.
+ * Returns { dice, kept, dropped, modifier, total, isDoubles }.
+ * isDoubles: true when kept.length >= 2 and all kept values are equal.
+ */
+function evaluateFormula(formula) {
+  const m = String(formula).trim().match(
+    /^(\d+)d(\d+)(?:k([hl])(\d+))?(?:\s*([+-])\s*(\d+))?$/i
+  );
+  if (!m) return { dice: [], kept: [], dropped: [], modifier: 0, total: 0, isDoubles: false };
+
+  const count    = parseInt(m[1], 10);
+  const sides    = parseInt(m[2], 10);
+  const keepDir  = m[3] ? m[3].toLowerCase() : null;  // 'h', 'l', or null
+  const keepN    = m[4] ? parseInt(m[4], 10) : count;
+  const modifier = m[6] ? (m[5] === '-' ? -1 : 1) * parseInt(m[6], 10) : 0;
+
+  const dice = [];
+  for (let i = 0; i < count; i++) dice.push(Math.floor(Math.random() * sides) + 1);
+
+  let kept, dropped;
+  if (!keepDir) {
+    kept    = dice.slice();
+    dropped = [];
+  } else {
+    const sorted = dice.slice().sort((a, b) => a - b);
+    if (keepDir === 'h') {
+      kept    = sorted.slice(count - keepN);
+      dropped = sorted.slice(0, count - keepN);
+    } else {
+      kept    = sorted.slice(0, keepN);
+      dropped = sorted.slice(keepN);
+    }
+  }
+
+  const total     = kept.reduce((s, v) => s + v, 0) + modifier;
+  const isDoubles = kept.length >= 2 && kept.every(function(v) { return v === kept[0]; });
+
+  return { dice: dice, kept: kept, dropped: dropped, modifier: modifier, total: total, isDoubles: isDoubles };
+}
+
 // Node export for unit testing; no-op in the browser (no `module` global there).
 if (typeof module !== 'undefined') {
   module.exports = {
     applyPerkModifiers, deriveMaxHP, deriveInjuryThreshold, deriveRecoveryModifier,
     deriveCarryingCapacity, getResourceMax, weaponAttackAbility,
-    buildTestFormula, buildAdvantageFormula
+    buildTestFormula, buildAdvantageFormula, evaluateFormula
   };
 }

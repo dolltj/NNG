@@ -97,3 +97,92 @@ test('getResourceMax: non-derived resource reads stored max', () => {
 test('getResourceMax: missing resource entry -> null', () => {
   assert.strictEqual(dice.getResourceMax({ id: 'shields', derived_max: false }, { resources: {} }), null);
 });
+
+test('evaluateFormula: plain 2d10 + modifier — structure and range', () => {
+  const r = dice.evaluateFormula('2d10 + 5');
+  assert.strictEqual(r.kept.length, 2);
+  assert.strictEqual(r.dropped.length, 0);
+  assert.strictEqual(r.modifier, 5);
+  assert.strictEqual(r.total, r.kept[0] + r.kept[1] + 5);
+  assert.ok(r.kept.every(v => v >= 1 && v <= 10), 'all d10 values in [1,10]');
+});
+
+test('evaluateFormula: negative modifier', () => {
+  const r = dice.evaluateFormula('2d10 - 3');
+  assert.strictEqual(r.modifier, -3);
+  assert.strictEqual(r.total, r.kept[0] + r.kept[1] - 3);
+});
+
+test('evaluateFormula: no modifier', () => {
+  const r = dice.evaluateFormula('2d10');
+  assert.strictEqual(r.modifier, 0);
+  assert.strictEqual(r.kept.length, 2);
+  assert.strictEqual(r.dropped.length, 0);
+  assert.strictEqual(r.total, r.kept[0] + r.kept[1]);
+});
+
+test('evaluateFormula: advantage (4d10kh2) keeps 2 highest', () => {
+  const r = dice.evaluateFormula('4d10kh2');
+  assert.strictEqual(r.dice.length, 4);
+  assert.strictEqual(r.kept.length, 2);
+  assert.strictEqual(r.dropped.length, 2);
+  const allSorted = [...r.dice].sort((a, b) => a - b);
+  assert.deepStrictEqual(
+    [...r.kept].sort((a, b) => a - b),
+    allSorted.slice(-2),
+    'kept should be the 2 highest values'
+  );
+});
+
+test('evaluateFormula: disadvantage (4d10kl2) keeps 2 lowest', () => {
+  const r = dice.evaluateFormula('4d10kl2');
+  assert.strictEqual(r.dice.length, 4);
+  assert.strictEqual(r.kept.length, 2);
+  assert.strictEqual(r.dropped.length, 2);
+  const allSorted = [...r.dice].sort((a, b) => a - b);
+  assert.deepStrictEqual(
+    [...r.kept].sort((a, b) => a - b),
+    allSorted.slice(0, 2),
+    'kept should be the 2 lowest values'
+  );
+});
+
+test('evaluateFormula: isDoubles true when kept dice all equal', () => {
+  const origRandom = Math.random;
+  Math.random = () => 0;  // Math.floor(0 * 10) + 1 = 1; all dice = 1
+  const r = dice.evaluateFormula('2d10');
+  Math.random = origRandom;
+  assert.strictEqual(r.isDoubles, true);
+  assert.deepStrictEqual(r.kept, [1, 1]);
+});
+
+test('evaluateFormula: isDoubles false when kept dice differ', () => {
+  let call = 0;
+  const origRandom = Math.random;
+  Math.random = () => call++ === 0 ? 0.2 : 0.8;  // 3 and 9
+  const r = dice.evaluateFormula('2d10');
+  Math.random = origRandom;
+  assert.strictEqual(r.isDoubles, false);
+});
+
+test('evaluateFormula: 1d10 — isDoubles false (only 1 kept die)', () => {
+  const r = dice.evaluateFormula('1d10');
+  assert.strictEqual(r.kept.length, 1);
+  assert.strictEqual(r.dropped.length, 0);
+  assert.strictEqual(r.isDoubles, false);
+});
+
+test('evaluateFormula: weapon damage 2d6 + 4', () => {
+  const r = dice.evaluateFormula('2d6 + 4');
+  assert.strictEqual(r.kept.length, 2);
+  assert.strictEqual(r.modifier, 4);
+  assert.strictEqual(r.total, r.kept[0] + r.kept[1] + 4);
+  assert.ok(r.kept.every(v => v >= 1 && v <= 6));
+});
+
+test('evaluateFormula: 1d1 announcement formula', () => {
+  const r = dice.evaluateFormula('1d1');
+  assert.deepStrictEqual(r.kept, [1]);
+  assert.strictEqual(r.total, 1);
+  assert.strictEqual(r.isDoubles, false);
+});
