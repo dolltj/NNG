@@ -101,9 +101,41 @@
   // relying on the toast's timing.
   // -----------------------------------------------
   function _logRoll(rollData) {
-    _rollLog.unshift({ label: rollData.label || 'Roll', formula: rollData.formula || '' });
+    const entry = { label: rollData.label || 'Roll', formula: rollData.formula || '' };
+    if (getRollMode() === 'integrated' && typeof evaluateFormula === 'function') {
+      try { entry.evalResult = evaluateFormula(rollData.formula || ''); } catch (_) {}
+    }
+    _rollLog.unshift(entry);
     if (_rollLog.length > ROLL_LOG_MAX) _rollLog.length = ROLL_LOG_MAX;
     _renderRollLog();
+  }
+
+  function _renderLogEntry(entry) {
+    if (!entry.evalResult) {
+      return `
+      <div class="roll-log-entry">
+        <span class="roll-log-formula">${window.escHtml(entry.formula)}</span>
+        <span class="roll-log-label">${window.escHtml(entry.label)}</span>
+      </div>`;
+    }
+    const ev = entry.evalResult;
+    const keptHtml    = ev.kept.map(v =>
+      `<span class="die-box die-kept">${window.escHtml(String(v))}</span>`).join('');
+    const droppedHtml = ev.dropped.map(v =>
+      `<span class="die-box die-dropped">${window.escHtml(String(v))}</span>`).join('');
+    const modHtml = ev.modifier !== 0
+      ? `<span class="roll-modifier">${ev.modifier > 0 ? '+' : ''}${ev.modifier}</span>`
+      : '';
+    const critHtml = ev.isDoubles ? `<span class="roll-crit">⚡ CRIT!</span>` : '';
+    return `
+    <div class="roll-log-entry roll-log-entry-integrated">
+      <div class="roll-log-dice-row">
+        ${keptHtml}${droppedHtml}${modHtml}
+        <span class="roll-total">= ${ev.total}</span>
+        ${critHtml}
+      </div>
+      <span class="roll-log-label">${window.escHtml(entry.label)}</span>
+    </div>`;
   }
 
   function _renderRollLog() {
@@ -119,12 +151,7 @@
         <span class="roll-log-title">Sent Rolls</span>
         <button class="roll-log-close" title="Dismiss">✕</button>
       </div>
-      ${_rollLog.map(r => `
-        <div class="roll-log-entry">
-          <span class="roll-log-formula">${window.escHtml(r.formula)}</span>
-          <span class="roll-log-label">${window.escHtml(r.label)}</span>
-        </div>
-      `).join('')}
+      ${_rollLog.map(r => _renderLogEntry(r)).join('')}
     `;
     panel.querySelector('.roll-log-close').addEventListener('click', () => {
       panel.classList.remove('visible');
