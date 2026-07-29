@@ -14,6 +14,31 @@
   const ROLL_LOG_MAX = 5;
   let _rollLog = [];
 
+  const ROLL_MODE_KEY = 'ttrpg_roll_mode';
+
+  function getRollMode() {
+    return localStorage.getItem(ROLL_MODE_KEY) === 'integrated' ? 'integrated' : 'roll20';
+  }
+
+  function setRollMode(mode) {
+    localStorage.setItem(ROLL_MODE_KEY, mode === 'integrated' ? 'integrated' : 'roll20');
+    _updateModeButton();
+  }
+
+  function toggleRollMode() {
+    setRollMode(getRollMode() === 'integrated' ? 'roll20' : 'integrated');
+  }
+
+  function _updateModeButton() {
+    const btn = document.getElementById('roll-mode-btn');
+    if (!btn) return;
+    const integrated = getRollMode() === 'integrated';
+    btn.textContent = integrated ? '🎲 Local' : '📤 Roll20';
+    btn.title = integrated
+      ? 'Dice rolled in-app (also sent to Roll20)'
+      : 'Dice sent to Roll20 (current mode)';
+  }
+
   // -----------------------------------------------
   // Detection: listen for Beyond20's presence signal
   // Beyond20 injects a small script that fires a
@@ -28,8 +53,8 @@
   // Also set a flag if the extension sends the
   // standard Beyond20 handshake on DOMContentLoaded
   window.addEventListener('DOMContentLoaded', () => {
-    // Give Beyond20 1 second to inject its signal
     setTimeout(() => { _beyond20Checked = true; }, 1000);
+    _updateModeButton();
   });
 
   /**
@@ -254,5 +279,9 @@
   }
 
   // Expose public API
-  window.Roll20Bridge = { sendToRoll20, sendAnnouncement, showRollToast, isAvailable: () => _beyond20Available };
+  window.Roll20Bridge = {
+    sendToRoll20, sendAnnouncement, showRollToast,
+    isAvailable: () => _beyond20Available,
+    getRollMode, setRollMode, toggleRollMode
+  };
 })();
