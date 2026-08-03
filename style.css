@@ -1251,6 +1251,7 @@ textarea.field-input {
 .weapon-action-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-sm);
   min-height: 32px;
 }
@@ -1276,6 +1277,15 @@ textarea.field-input {
   background: var(--bg-raised, #2a2a3a);
   color: var(--text-secondary);
   white-space: nowrap;
+}
+
+.weapon-action-notes {
+  flex: 0 0 100%;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-left: 138px;
+  margin-top: -2px;
 }
 
 .weapon-attachments {

@@ -1453,7 +1453,6 @@ function buildActionRow(weaponInst, resolved, action) {
   const notesParts = [`+${abilityAtRender.value} ${abilityAtRender.stat}`];
   if (action.area_of_effect != null) notesParts.push(`AoE ${action.area_of_effect}`);
   if (action.save_dv != null) notesParts.push(`DV ${action.save_dv} negates`);
-  if (action.notes) notesParts.push(action.notes);
   const notesText = notesParts.length ? ` (${notesParts.join(', ')})` : '';
 
   // Heavy keyword: Disadvantage on attack rolls if STR < 3 (NNGRules)
@@ -1486,6 +1485,7 @@ function buildActionRow(weaponInst, resolved, action) {
       ? `<button class="btn btn-secondary weapon-use-btn"${insufficientAmmo ? ' disabled' : ''}>Use</button>`
       : `${dmgBadge}<button class="attack-roll-btn"${insufficientAmmo ? ' disabled' : ''}>🎲 Attack</button>
          <button class="damage-roll-btn">⚔ ${escHtml(action.damage)}</button>`}
+    ${action.notes ? `<span class="weapon-action-notes">${escHtml(action.notes)}</span>` : ''}
   `;
 
   const spendAmmo = () => {
@@ -1792,7 +1792,7 @@ function renderTabActions(char) {
     <span class="combat-stat-chip-label">Initiative</span>
     <span style="font-size:0.75rem;color:var(--text-muted)">bonus</span>
     <input type="number" class="currency-input" value="${char.initiative_bonus ?? 0}" style="width:40px" id="actions-init-input">
-    <button class="ability-roll-btn" id="actions-init-btn" title="Roll 1d10 + AGI + bonus">🎲 Roll</button>
+    <button class="ability-roll-btn" id="actions-init-btn" title="Roll 2d10 + AGI + bonus">🎲 Roll</button>
   `;
   initSide.querySelector('#actions-init-input').addEventListener('change', e => {
     getChar().initiative_bonus = parseInt(e.target.value) || 0;
@@ -1804,10 +1804,10 @@ function renderTabActions(char) {
     const mod = applyPerkModifiers(getChar(), 'initiative', agi + bonus);
     const characterName = rollCharacterName(getChar());
     if (e.shiftKey) {
-      openAdvantageModal({ label: 'Initiative', baseDieCount: 1, modifier: mod, characterName });
+      openAdvantageModal({ label: 'Initiative', baseDieCount: 2, modifier: mod, characterName });
       return;
     }
-    const formula = mod > 0 ? `1d10 + ${mod}` : mod < 0 ? `1d10 - ${Math.abs(mod)}` : '1d10';
+    const formula = mod > 0 ? `2d10 + ${mod}` : mod < 0 ? `2d10 - ${Math.abs(mod)}` : '2d10';
     window.Roll20Bridge.sendToRoll20({ label: 'Initiative', formula, characterName });
   });
 
